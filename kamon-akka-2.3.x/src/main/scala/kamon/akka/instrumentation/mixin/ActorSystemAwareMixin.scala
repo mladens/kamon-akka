@@ -14,22 +14,12 @@
  * =========================================================================================
  */
 
-package akka.kamon.instrumentation
+package kamon.akka.instrumentation.mixin
 
-import akka.kamon.instrumentation.advisor.AskMethodAdvisor
-import kamon.agent.scala.KamonInstrumentation
+import akka.actor.ActorSystem
 
-class AskPatternInstrumentation extends KamonInstrumentation {
+class ActorSystemAwareMixin extends ActorSystemAware
 
-  /**
-    * Instrument:
-    *
-    * akka.pattern.AskableActorRef::$qmark$extension
-    *
-    */
-  forTargetType("akka.pattern.AskableActorRef$") { builder ⇒
-    builder
-      .withAdvisorFor(named("$qmark$extension"), classOf[AskMethodAdvisor])
-      .build()
-  }
+trait ActorSystemAware {
+  @volatile var actorSystem: ActorSystem = _
 }

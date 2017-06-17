@@ -1,3 +1,4 @@
+
 /* =========================================================================================
  * Copyright © 2013-2016 the kamon project <http://kamon.io/>
  *
@@ -18,6 +19,9 @@ resolvers += Resolver.bintrayRepo("kamon-io", "snapshots")
 val kamonCore  = "io.kamon" %% "kamon-core" % "1.0.0-RC1-dd645df1b7c462418c01074d0e137982d2f270b7"
 val kamonScala = "io.kamon" %% "kamon-scala" % "1.0.0-RC1-b1dc4786bca305d87400cd423b347b4d689a9807" exclude("io.kamon", "kamon-core")
 val kamonExecutors = "io.kamon" %% "kamon-executors" % "1.0.0-RC1-24f29c9a3c52663ada75fd85edcc5fd3810e97a2" exclude("io.kamon", "kamon-core")
+val kamonScalaKa = "io.kamon" %% "kamon-scala" % "experimental-1.0.0-RC1-9a93b42263e5ef2519e217312e2a8bbb28e71323" exclude("io.kamon", "kamon-core")
+
+val scalaExtension    = "io.kamon"    %% "agent-scala-extension"        % "0.0.3-experimental"
 
 val `akka-2.3` = "2.3.13"
 val `akka-2.4` = "2.4.16"
@@ -38,11 +42,12 @@ lazy val kamonAkka23 = Project("kamon-akka-23", file("kamon-akka-2.3.x"))
       moduleName := "kamon-akka-2.3",
       scalaVersion := "2.11.8",
       crossScalaVersions := Seq("2.10.6", "2.11.8")))
-  .settings(aspectJSettings: _*)
+  .enablePlugins(JavaAgent)
+  .settings(resolvers += Resolver.bintrayRepo("kamon-io", "snapshots"))
+  .settings(javaAgents += "io.kamon"    % "kamon-agent"   % "0.0.3-experimental"  % "compile;test")
   .settings(
     libraryDependencies ++=
-      compileScope(akkaDependency("actor", `akka-2.3`), kamonCore, kamonScala, kamonExecutors) ++
-      providedScope(aspectJ) ++
+      compileScope(akkaDependency("actor", `akka-2.3`), kamonCore, kamonScalaKa, scalaExtension) ++
       optionalScope(logbackClassic) ++
       testScope(scalatest, akkaDependency("testkit", `akka-2.3`), akkaDependency("slf4j", `akka-2.3`), logbackClassic))
 

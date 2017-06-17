@@ -19,9 +19,9 @@ package kamon.instrumentation.akka
 
 import akka.actor.{ActorSystem, ExtendedActorSystem, Props}
 import akka.dispatch.Envelope
-import akka.kamon.instrumentation.{InstrumentedEnvelope, TimestampedContinuation}
 import akka.testkit.{ImplicitSender, TestKit}
 import kamon.Kamon
+import kamon.akka.instrumentation.mixin.{InstrumentedEnvelope, TimestampedContinuation}
 import kamon.testkit.BaseKamonSpec
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 

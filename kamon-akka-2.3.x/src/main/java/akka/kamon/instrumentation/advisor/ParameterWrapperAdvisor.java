@@ -14,22 +14,20 @@
  * =========================================================================================
  */
 
-package akka.kamon.instrumentation
+package akka.kamon.instrumentation.advisor;
 
-import akka.kamon.instrumentation.advisor.AskMethodAdvisor
-import kamon.agent.scala.KamonInstrumentation
+import akka.actor.Cell;
+import akka.kamon.instrumentation.Wrappers.TraceContextAwareCell;
+import kamon.agent.libs.net.bytebuddy.asm.Advice.Argument;
+import kamon.agent.libs.net.bytebuddy.asm.Advice.OnMethodEnter;
 
-class AskPatternInstrumentation extends KamonInstrumentation {
-
-  /**
-    * Instrument:
-    *
-    * akka.pattern.AskableActorRef::$qmark$extension
-    *
-    */
-  forTargetType("akka.pattern.AskableActorRef$") { builder ⇒
-    builder
-      .withAdvisorFor(named("$qmark$extension"), classOf[AskMethodAdvisor])
-      .build()
-  }
+/**
+ * Advisor for akka.actor.UnstartedCell::replaceWith
+ */
+public class ParameterWrapperAdvisor {
+    @OnMethodEnter
+    public static void onEnter(@Argument(value = 0, readOnly = false) Cell cell) {
+        cell = new TraceContextAwareCell(cell);
+    }
 }
+

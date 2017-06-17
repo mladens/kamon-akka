@@ -14,22 +14,12 @@
  * =========================================================================================
  */
 
-package akka.kamon.instrumentation
+package kamon.akka.instrumentation.mixin
 
-import akka.kamon.instrumentation.advisor.AskMethodAdvisor
-import kamon.agent.scala.KamonInstrumentation
+import akka.kamon.instrumentation.advisor.LookupDataAware.LookupData
 
-class AskPatternInstrumentation extends KamonInstrumentation {
+class LookupDataAwareMixin extends LookupDataAware
 
-  /**
-    * Instrument:
-    *
-    * akka.pattern.AskableActorRef::$qmark$extension
-    *
-    */
-  forTargetType("akka.pattern.AskableActorRef$") { builder ⇒
-    builder
-      .withAdvisorFor(named("$qmark$extension"), classOf[AskMethodAdvisor])
-      .build()
-  }
+trait LookupDataAware {
+  @volatile var lookupData: LookupData = _
 }

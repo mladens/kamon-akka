@@ -14,22 +14,21 @@
  * =========================================================================================
  */
 
-package akka.kamon.instrumentation
+package kamon.akka.instrumentation.mixin
 
-import akka.kamon.instrumentation.advisor.AskMethodAdvisor
-import kamon.agent.scala.KamonInstrumentation
+import akka.kamon.instrumentation.RouterMonitor
 
-class AskPatternInstrumentation extends KamonInstrumentation {
+/**
+  * Mixin for akka.routing.RoutedActorCell
+  */
+class RoutedActorCellInstrumentationMixin extends RouterInstrumentationAware {
+  @volatile private var _ri: RouterMonitor = _
 
-  /**
-    * Instrument:
-    *
-    * akka.pattern.AskableActorRef::$qmark$extension
-    *
-    */
-  forTargetType("akka.pattern.AskableActorRef$") { builder ⇒
-    builder
-      .withAdvisorFor(named("$qmark$extension"), classOf[AskMethodAdvisor])
-      .build()
-  }
+  def setRouterInstrumentation(ai: RouterMonitor): Unit = _ri = ai
+  def routerInstrumentation: RouterMonitor = _ri
+}
+
+trait RouterInstrumentationAware {
+  def routerInstrumentation: RouterMonitor
+  def setRouterInstrumentation(ai: RouterMonitor): Unit
 }

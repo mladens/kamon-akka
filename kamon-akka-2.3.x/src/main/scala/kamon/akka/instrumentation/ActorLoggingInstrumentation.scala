@@ -16,10 +16,10 @@
 
 package akka.kamon.instrumentation
 
-import org.aspectj.lang.ProceedingJoinPoint
-import org.aspectj.lang.annotation._
+//import org.aspectj.lang.ProceedingJoinPoint
+//import org.aspectj.lang.annotation._
 
-@Aspect
+//@Aspect
 class ActorLoggingInstrumentation /*extends MdcKeysSupport*/ {
 
 /*  @DeclareMixin("akka.event.Logging.LogEvent+")

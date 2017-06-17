@@ -1,15 +1,33 @@
+/*
+ * =========================================================================================
+ * Copyright © 2013-2017 the kamon project <http://kamon.io/>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions
+ * and limitations under the License.
+ * =========================================================================================
+ */
+
 package akka.kamon.instrumentation
 
 import akka.actor.{ActorRef, ActorSystem, Cell}
 import akka.kamon.instrumentation.ActorMonitors.{TrackedActor, TrackedRoutee}
+import io.opentracing.NoopActiveSpanSource.{NoopActiveSpan, NoopContinuation}
 import kamon.Kamon
 import kamon.akka.Metrics
 import kamon.akka.Metrics.{ActorGroupMetrics, ActorMetrics, RouterMetrics}
-import org.aspectj.lang.ProceedingJoinPoint
+import kamon.akka.instrumentation.mixin.{TimestampedActiveSpan, TimestampedContinuation}
 
 trait ActorMonitor {
   def captureEnvelopeContext(): TimestampedContinuation
-  def processMessage(pjp: ProceedingJoinPoint, envelopeContext: TimestampedContinuation): AnyRef
+  def processMessageStart(envelopeContext: TimestampedContinuation): TimestampedActiveSpan
+  def processMessageEnd(timestampedActiveSpan: TimestampedActiveSpan, envelopeContext: TimestampedContinuation): Unit
   def processFailure(failure: Throwable): Unit
   def cleanup(): Unit
 }
@@ -30,7 +48,7 @@ object ActorMonitor {
   }
 
   def createRegularActorMonitor(cellInfo: CellInfo): ActorMonitor = {
-    if (cellInfo.isTracked || !cellInfo.trackingGroups.isEmpty) {
+    if (cellInfo.isTracked || cellInfo.trackingGroups.nonEmpty) {
       val actorMetrics = if (cellInfo.isTracked) Some(Metrics.forActor(cellInfo.path)) else None
       new TrackedActor(actorMetrics, trackingGroupMetrics(cellInfo), cellInfo.actorCellCreation)
     } else {
@@ -54,13 +72,15 @@ object ActorMonitors {
 
   val ContextPropagationOnly = new ActorMonitor {
     def captureEnvelopeContext(): TimestampedContinuation =
-      TimestampedContinuation(0, Kamon.activeSpanContinuation())
+      TimestampedContinuation(0L, Kamon.activeSpanContinuation())
 
-    def processMessage(pjp: ProceedingJoinPoint, envelopeContext: TimestampedContinuation): AnyRef = {
-      Kamon.withContinuation(envelopeContext.continuation) {
-        pjp.proceed()
-      }
+    def processMessageStart(envelopeContext: TimestampedContinuation): TimestampedActiveSpan = {
+      val continuation = envelopeContext.continuation
+      TimestampedActiveSpan(0L, if(continuation != null) continuation.activate() else NoopActiveSpan.INSTANCE)
     }
+
+    def processMessageEnd(timestampedActiveSpan: TimestampedActiveSpan, envelopeContext: TimestampedContinuation): Unit =
+      timestampedActiveSpan.activeSpan.deactivate()
 
     def processFailure(failure: Throwable): Unit = {}
     def cleanup(): Unit = {}
@@ -68,7 +88,7 @@ object ActorMonitors {
   }
 
   class TrackedActor(actorMetrics: Option[ActorMetrics], groupMetrics: Seq[ActorGroupMetrics], actorCellCreation: Boolean)
-      extends GroupMetricsTrackingActor(groupMetrics, actorCellCreation) {
+    extends GroupMetricsTrackingActor(groupMetrics, actorCellCreation) {
 
     override def captureEnvelopeContext(): TimestampedContinuation = {
       actorMetrics.foreach { am =>
@@ -77,15 +97,14 @@ object ActorMonitors {
       super.captureEnvelopeContext()
     }
 
-    def processMessage(pjp: ProceedingJoinPoint, envelopeContext: TimestampedContinuation): AnyRef = {
-      val timestampBeforeProcessing = System.nanoTime()
+    def processMessageStart(envelopeContext: TimestampedContinuation): TimestampedActiveSpan =
+      TimestampedActiveSpan(System.nanoTime(), envelopeContext.continuation.activate())
 
-      try {
-        Kamon.withContinuation(envelopeContext.continuation) {
-          pjp.proceed()
-        }
+    def processMessageEnd(timestampedActiveSpan: TimestampedActiveSpan, envelopeContext: TimestampedContinuation): Unit = {
+      val activeSpan = timestampedActiveSpan.activeSpan
+      val timestampBeforeProcessing = timestampedActiveSpan.nanoTime
 
-      } finally {
+      try activeSpan.deactivate() finally {
         val timestampAfterProcessing = System.nanoTime()
         val timeInMailbox = timestampBeforeProcessing - envelopeContext.nanoTime
         val processingTime = timestampAfterProcessing - timestampBeforeProcessing
@@ -113,17 +132,16 @@ object ActorMonitors {
   }
 
   class TrackedRoutee(routerMetrics: RouterMetrics, groupMetrics: Seq[ActorGroupMetrics], actorCellCreation: Boolean)
-      extends GroupMetricsTrackingActor(groupMetrics, actorCellCreation) {
+    extends GroupMetricsTrackingActor(groupMetrics, actorCellCreation) {
 
-    def processMessage(pjp: ProceedingJoinPoint, envelopeContext: TimestampedContinuation): AnyRef = {
-      val timestampBeforeProcessing = System.nanoTime()
+    def processMessageStart(envelopeContext: TimestampedContinuation): TimestampedActiveSpan =
+      TimestampedActiveSpan(System.nanoTime(), envelopeContext.continuation.activate())
 
-      try {
-        Kamon.withContinuation(envelopeContext.continuation) {
-          pjp.proceed()
-        }
+    def processMessageEnd(timestampedActiveSpan: TimestampedActiveSpan, envelopeContext: TimestampedContinuation): Unit = {
+      val activeSpan = timestampedActiveSpan.activeSpan
+      val timestampBeforeProcessing = timestampedActiveSpan.nanoTime
 
-      } finally {
+      try activeSpan.deactivate() finally {
         val timestampAfterProcessing = System.nanoTime()
         val timeInMailbox = timestampBeforeProcessing - envelopeContext.nanoTime
         val processingTime = timestampAfterProcessing - timestampBeforeProcessing
