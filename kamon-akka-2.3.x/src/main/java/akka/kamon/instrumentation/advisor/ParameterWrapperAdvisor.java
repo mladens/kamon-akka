@@ -17,7 +17,7 @@
 package akka.kamon.instrumentation.advisor;
 
 import akka.actor.Cell;
-import akka.kamon.instrumentation.Wrappers.TraceContextAwareCell;
+import akka.kamon.instrumentation.Wrappers.ContinuationAwareCell;
 import kamon.agent.libs.net.bytebuddy.asm.Advice.Argument;
 import kamon.agent.libs.net.bytebuddy.asm.Advice.OnMethodEnter;
 
@@ -27,7 +27,7 @@ import kamon.agent.libs.net.bytebuddy.asm.Advice.OnMethodEnter;
 public class ParameterWrapperAdvisor {
     @OnMethodEnter
     public static void onEnter(@Argument(value = 0, readOnly = false) Cell cell) {
-        cell = new TraceContextAwareCell(cell);
+        cell = ContinuationAwareCell.from(cell);
     }
 }
 

@@ -50,7 +50,7 @@ object InvokeMethodAdvisor extends ActorInstrumentationSupport {
   @OnMethodEnter
   def onEnter(@This cell: Cell,
               @Argument(0) envelope: Object): TimestampedActiveSpan = {
-    // FIXME The `envelopeContext orElse Empty` code is a workaround to prevent NullPointer when the
+    // IMPROVE: The `envelopeContext orElse Empty` code is a workaround to prevent NullPointer when the
     // Envelope come from a RoutedActorCell in some cases as in the test
     // `RouterMetricsSpec."clean up the associated recorder when the pool router is stopped"`
     val timestampedContinuation = Option(envelope.asInstanceOf[InstrumentedEnvelope].timestampedContinuation()).getOrElse(TimestampedContinuation.Empty)

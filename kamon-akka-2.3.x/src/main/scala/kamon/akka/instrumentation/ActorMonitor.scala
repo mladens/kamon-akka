@@ -18,7 +18,7 @@ package akka.kamon.instrumentation
 
 import akka.actor.{ActorRef, ActorSystem, Cell}
 import akka.kamon.instrumentation.ActorMonitors.{TrackedActor, TrackedRoutee}
-import io.opentracing.NoopActiveSpanSource.{NoopActiveSpan, NoopContinuation}
+import io.opentracing.NoopActiveSpanSource.NoopActiveSpan
 import kamon.Kamon
 import kamon.akka.Metrics
 import kamon.akka.Metrics.{ActorGroupMetrics, ActorMetrics, RouterMetrics}

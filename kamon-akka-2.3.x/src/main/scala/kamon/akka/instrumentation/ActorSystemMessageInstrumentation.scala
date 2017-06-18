@@ -25,7 +25,7 @@ class ActorSystemMessageInstrumentation extends KamonInstrumentation {
   /**
     * Mix:
     *
-    * akka.dispatch.sysmsg.SystemMessage with kamon.trace.TraceContextAware
+    * akka.dispatch.sysmsg.SystemMessage with kamon.instrumentation.mixin.HasContinuationMixin
     *
     */
   forSubtypeOf("akka.dispatch.sysmsg.SystemMessage") { builder ⇒
@@ -41,7 +41,7 @@ class ActorSystemMessageInstrumentation extends KamonInstrumentation {
     *
     * Mix:
     *
-    * akka.actor.RepointableActorRef with kamon.trace.TraceContextAware
+    * akka.actor.RepointableActorRef with kamon.instrumentation.mixin.HasContinuationMixin
     *
     */
   forTargetType("akka.actor.RepointableActorRef") { builder ⇒

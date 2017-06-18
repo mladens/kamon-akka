@@ -25,9 +25,9 @@ import kamon.akka.instrumentation.mixin.InstrumentedEnvelope
 
 object Wrappers {
   /**
-    * Wrap an akka.actor.Cell in order to propagate the current TraceContext when calling sendMessage method
+    * Wrap an akka.actor.Cell in order to propagate the current Continuation when calling sendMessage method
     */
-  class TraceContextAwareCell(underlying: Cell) extends Cell {
+  class ContinuationAwareCell(underlying: Cell) extends Cell {
     def self: ActorRef = underlying.self
     def isTerminated: Boolean = underlying.isTerminated
     def getSingleChild(name: String): InternalActorRef = underlying.getSingleChild(name)
@@ -61,4 +61,9 @@ object Wrappers {
       }
     }
   }
+
+  object ContinuationAwareCell {
+    def from(underlying: Cell): ContinuationAwareCell = new ContinuationAwareCell(underlying)
+  }
+
 }
