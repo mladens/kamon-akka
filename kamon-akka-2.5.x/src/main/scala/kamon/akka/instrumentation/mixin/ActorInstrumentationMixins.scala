@@ -14,22 +14,22 @@
  * =========================================================================================
  */
 
-package akka.kamon.instrumentation
+package kamon.akka.instrumentation.mixin
 
-import akka.kamon.instrumentation.advisor.AskMethodAdvisor
-import kamon.agent.scala.KamonInstrumentation
+import akka.kamon.instrumentation.ActorMonitor
 
-class AskPatternInstrumentation extends KamonInstrumentation {
+/**
+  * Mixin for akka.actor.ActorCell
+  * Mixin for akka.actor.UnstartedCell
+  */
+class ActorInstrumentationMixin extends ActorInstrumentationAware {
+  @volatile private var _ai: ActorMonitor = _
 
-  /**
-    * Instrument:
-    *
-    * akka.pattern.AskableActorRef::$qmark$extension
-    *
-    */
-  forTargetType("akka.pattern.AskableActorRef$") { builder ⇒
-    builder
-      .withAdvisorFor(named("$qmark$extension"), classOf[AskMethodAdvisor])
-      .build()
-  }
+  def setActorInstrumentation(ai: ActorMonitor): Unit = _ai = ai
+  def actorInstrumentation: ActorMonitor = _ai
+}
+
+trait ActorInstrumentationAware {
+  def actorInstrumentation: ActorMonitor
+  def setActorInstrumentation(ai: ActorMonitor): Unit
 }

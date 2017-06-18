@@ -20,7 +20,7 @@ import kamon.Kamon
 import kamon.akka.Akka
 
 case class CellInfo(path: String, isRouter: Boolean, isRoutee: Boolean, isTracked: Boolean, trackingGroups: Seq[String],
-    actorCellCreation: Boolean)
+                    actorCellCreation: Boolean)
 
 object CellInfo {
 
