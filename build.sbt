@@ -33,6 +33,7 @@ lazy val `kamon-akka` = (project in file("."))
 
 
 lazy val kamonAkka23 = Project("kamon-akka-23", file("kamon-akka-2.3.x"))
+  .settings(isSnapshot := true)
   .settings(Seq(
       bintrayPackage := "kamon-akka",
       moduleName := "kamon-akka-2.3",
@@ -49,6 +50,7 @@ lazy val kamonAkka23 = Project("kamon-akka-23", file("kamon-akka-2.3.x"))
 
 
 lazy val kamonAkka24 = Project("kamon-akka-24", file("kamon-akka-2.4.x"))
+  .settings(isSnapshot := true)
   .settings(Seq(
       bintrayPackage := "kamon-akka",
       moduleName := "kamon-akka-2.4",
@@ -65,7 +67,8 @@ lazy val kamonAkka24 = Project("kamon-akka-24", file("kamon-akka-2.4.x"))
       testScope(scalatest, akkaDependency("testkit", `akka-2.4`), akkaDependency("slf4j", `akka-2.4`), logbackClassic))
 
 lazy val kamonAkka25 = Project("kamon-akka-25", file("kamon-akka-2.5.x"))
-   .settings(Seq(
+  .settings(isSnapshot := true)
+  .settings(Seq(
      bintrayPackage := "kamon-akka",
      moduleName := "kamon-akka-2.5",
      scalaVersion := "2.12.2",

@@ -5,9 +5,9 @@
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.kamon/kamon-akka-2.4_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.kamon/kamon-akka-2.4_2.12)
 
 Kamon's integration with Akka comes in the form of two modules: `kamon-akka` and `kamon-akka-remote` that bring bytecode
-instrumentation to gather metrics and perform automatic `TraceContext` propagation on your behalf.
+instrumentation to gather metrics and perform automatic `Continuation` propagation on your behalf.
 
-The <b>kamon-akka</b> module require you to start your application using the AspectJ Weaver Agent. Kamon will warn you at startup if you failed to do so.
+The <b>kamon-akka</b> module require you to start your application using the [Kamon Agent]. Kamon will warn you at startup if you failed to do so.
 
 ### Getting Started
 
@@ -17,24 +17,29 @@ Supported releases and dependencies are shown below.
 
 | kamon-akka-2.3  | status | jdk  | scala            | akka   |
 |:------:|:------:|:----:|------------------|:------:|
-|  0.6.6 | stable | 1.7+, 1.8+ | 2.10, 2.11  | 2.3.x |
+|  1.0.0 | stable | 1.7+, 1.8+ | 2.10, 2.11  | 2.3.x |
 
 | kamon-akka-2.4  | status | jdk  | scala            | akka   |
 |:------:|:------:|:----:|------------------|:------:|
-|  0.6.6 | stable | 1.7+, 1.8+ | 2.11, 2.12  | 2.4.x |
+|  1.0.0 | stable | 1.7+, 1.8+ | 2.11, 2.12  | 2.4.x |
+
+| kamon-akka-2.5  | status | jdk  | scala            | akka   |
+|:------:|:------:|:----:|------------------|:------:|
+| 1.0.0  | stable | 1.8+ | 2.11, 2.12  | 2.5.x |
+
 
 To get started with SBT, simply add the following to your `build.sbt`
 file:
 
 ```scala
-libraryDependencies += "io.kamon" %% "kamon-akka-2.4" % "0.6.6"
+libraryDependencies += "io.kamon" %% "kamon-akka-2.5" % "experimental-1.0.0-RC1"
 ```
 
 Here is a quick list of the functionalities included in the module:
 
 * __[Actor, Router and Dispatcher Metrics]__: This module hooks into Akka's heart to give you a robust set of metrics
 based on the concepts already exposed by our metrics module.
-* __[Automatic TraceContext Propagation]__: This allows you to implicitly propagate the `TraceContext` across actor messages
+* __[Automatic Span Continuation Propagation]__: This allows you to implicitly propagate the `Continuation` across actor messages
 without having to change a single line of code and respecting the "follow the events" rather than "stick to the thread"
 convention as described in the [event based threading model section].
 * __[Ask Pattern Timeout Warning]__: A utility that logs a warning with additional information when a usage of the Ask
@@ -45,3 +50,4 @@ Pattern timesout.
 [Ask Pattern Timeout Warning]: http://kamon.io/integrations/akka/ask-pattern-timeout-warning/
 [Actor, Router and Dispatcher Metrics]: http://kamon.io/integrations/akka/actor-router-and-dispatcher-metrics/
 [Automatic TraceContext Propagation]: http://kamon.io/integrations/akka/automatic-trace-context-propagation/
+[Kamon Agent]: https://github.com/kamon-io/kamon-agent
