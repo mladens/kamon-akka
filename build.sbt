@@ -58,10 +58,11 @@ lazy val kamonAkka24 = Project("kamon-akka-24", file("kamon-akka-2.4.x"))
       moduleName := "kamon-akka-2.4",
       scalaVersion := "2.12.1",
       crossScalaVersions := Seq("2.11.8", "2.12.1")))
-  .settings(aspectJSettings: _*)
-  .settings(
+  .enablePlugins(JavaAgent)
+  .settings(resolvers += Resolver.bintrayRepo("kamon-io", "snapshots"))
+  .settings(javaAgents += "io.kamon"    % "kamon-agent"   % "0.0.3-experimental"  % "compile;test")  .settings(
     libraryDependencies ++=
-      compileScope(akkaDependency("actor", `akka-2.4`), kamonCore, kamonScala, kamonExecutors) ++
+      compileScope(akkaDependency("actor", `akka-2.4`), kamonCore, kamonScalaKa, scalaExtension) ++
       providedScope(aspectJ) ++
       optionalScope(logbackClassic) ++
       testScope(scalatest, akkaDependency("testkit", `akka-2.4`), akkaDependency("slf4j", `akka-2.4`), logbackClassic))

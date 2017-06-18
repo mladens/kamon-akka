@@ -1,6 +1,6 @@
 /*
  * =========================================================================================
- * Copyright © 2013-2014 the kamon project <http://kamon.io/>
+ * Copyright © 2013-2017 the kamon project <http://kamon.io/>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
  * except in compliance with the License. You may obtain a copy of the License at
@@ -16,66 +16,38 @@
 
 package akka.kamon.instrumentation
 
-import akka.dispatch.sysmsg.EarliestFirstSystemMessageList
-import kamon.Kamon
-import kamon.util.HasContinuation
-import org.aspectj.lang.ProceedingJoinPoint
-import org.aspectj.lang.annotation._
+import akka.kamon.instrumentation.advisor.PointMethodAdvisor
+import kamon.agent.scala.KamonInstrumentation
+import kamon.instrumentation.mixin.HasContinuationMixin
 
-@Aspect
-class ActorSystemMessageInstrumentation {
+class ActorSystemMessageInstrumentation extends KamonInstrumentation {
 
-  @Pointcut("execution(* akka.actor.ActorCell.invokeAll$1(..)) && args(messages, *)")
-  def systemMessageProcessing(messages: EarliestFirstSystemMessageList): Unit = {}
-
-  @Around("systemMessageProcessing(messages)")
-  def aroundSystemMessageInvoke(pjp: ProceedingJoinPoint, messages: EarliestFirstSystemMessageList): Any = {
-    if (messages.nonEmpty) {
-      val continuation = messages.head.asInstanceOf[HasContinuation].continuation
-      Kamon.withContinuation(continuation)(pjp.proceed())
-
-    } else pjp.proceed()
-  }
-}
-
-@Aspect
-class TraceContextIntoSystemMessageMixin {
-
-  @DeclareMixin("akka.dispatch.sysmsg.SystemMessage+")
-  def mixinHasContinuationToSystemMessage: HasContinuation = HasContinuation.fromTracerActiveSpan()
-
-  @Pointcut("execution(akka.dispatch.sysmsg.SystemMessage+.new(..)) && this(message)")
-  def systemMessageCreation(message: HasContinuation): Unit = {}
-
-  @After("systemMessageCreation(message)")
-  def afterSystemMessageCreation(message: HasContinuation): Unit = {
-    // Necessary to force the initialization of HasContinuation at the moment of creation.
-    message.continuation
-  }
-}
-
-@Aspect
-class TraceContextIntoRepointableActorRefMixin {
-
-  @DeclareMixin("akka.actor.RepointableActorRef")
-  def mixinTraceContextAwareToRepointableActorRef: HasContinuation = HasContinuation.fromTracerActiveSpan()
-
-  @Pointcut("execution(akka.actor.RepointableActorRef.new(..)) && this(repointableActorRef)")
-  def envelopeCreation(repointableActorRef: HasContinuation): Unit = {}
-
-  @After("envelopeCreation(repointableActorRef)")
-  def afterEnvelopeCreation(repointableActorRef: HasContinuation): Unit = {
-    // Necessary to force the initialization of HasContinuation at the moment of creation.
-    repointableActorRef.continuation
+  /**
+    * Mix:
+    *
+    * akka.dispatch.sysmsg.SystemMessage with kamon.instrumentation.mixin.HasContinuationMixin
+    *
+    */
+  forSubtypeOf("akka.dispatch.sysmsg.SystemMessage") { builder ⇒
+    builder
+      .withMixin(classOf[HasContinuationMixin])
+      .build()
   }
 
-  @Pointcut("execution(* akka.actor.RepointableActorRef.point(..)) && this(repointableActorRef)")
-  def repointableActorRefCreation(repointableActorRef: HasContinuation): Unit = {}
-
-  @Around("repointableActorRefCreation(repointableActorRef)")
-  def afterRepointableActorRefCreation(pjp: ProceedingJoinPoint, repointableActorRef: HasContinuation): Any = {
-    Kamon.withContinuation(repointableActorRef.continuation) {
-      pjp.proceed()
-    }
+  /**
+    * Instrument:
+    *
+    * akka.actor.RepointableActorRef::point
+    *
+    * Mix:
+    *
+    * akka.actor.RepointableActorRef with kamon.instrumentation.mixin.HasContinuationMixin
+    *
+    */
+  forTargetType("akka.actor.RepointableActorRef") { builder ⇒
+    builder
+      .withMixin(classOf[HasContinuationMixin])
+      .withAdvisorFor(named("point"), classOf[PointMethodAdvisor])
+      .build()
   }
 }

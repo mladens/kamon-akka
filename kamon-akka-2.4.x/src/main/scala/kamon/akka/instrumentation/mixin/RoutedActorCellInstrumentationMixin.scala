@@ -14,20 +14,21 @@
  * =========================================================================================
  */
 
-package akka.kamon.instrumentation.advisor;
+package kamon.akka.instrumentation.mixin
 
-import akka.actor.Cell;
-import akka.kamon.instrumentation.Wrappers.ContinuationAwareCell;
-import kamon.agent.libs.net.bytebuddy.asm.Advice.Argument;
-import kamon.agent.libs.net.bytebuddy.asm.Advice.OnMethodEnter;
+import akka.kamon.instrumentation.RouterMonitor
 
 /**
- * Advisor for akka.actor.UnstartedCell::replaceWith
- */
-public class ParameterWrapperAdvisor {
-    @OnMethodEnter
-    public static void onEnter(@Argument(value = 0, readOnly = false) Cell cell) {
-        cell = new ContinuationAwareCell(cell);
-    }
+  * Mixin for akka.routing.RoutedActorCell
+  */
+class RoutedActorCellInstrumentationMixin extends RouterInstrumentationAware {
+  @volatile private var _ri: RouterMonitor = _
+
+  def setRouterInstrumentation(ai: RouterMonitor): Unit = _ri = ai
+  def routerInstrumentation: RouterMonitor = _ri
 }
 
+trait RouterInstrumentationAware {
+  def routerInstrumentation: RouterMonitor
+  def setRouterInstrumentation(ai: RouterMonitor): Unit
+}

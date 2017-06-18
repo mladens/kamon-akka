@@ -87,5 +87,5 @@ class DispatcherMetricsSpec extends TestKit(ActorSystem("DispatcherMetricsSpec")
     shutdownMethod.invoke(dispatcher)
   }
 
-  override protected def afterAll(): Unit = system.terminate()
+  override protected def afterAll(): Unit = system.shutdown()
 }
