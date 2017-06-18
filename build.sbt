@@ -20,10 +20,9 @@ val `akka-2.4`            = "2.4.16"
 val `akka-2.5`            = "2.5.2"
 val `kamon-agent-version` = "0.0.3-experimental"
 
-val kamonCore       = "io.kamon" %% "kamon-core"            % "1.0.0-RC1-dd645df1b7c462418c01074d0e137982d2f270b7"
-val kamonScala      = "io.kamon" %% "kamon-scala"           % "1.0.0-RC1-b1dc4786bca305d87400cd423b347b4d689a9807"              exclude("io.kamon", "kamon-core")
+val kamonCore       = "io.kamon" %% "kamon-core"            % "1.0.0-RC1-9119413d8dc9b26874e85d8a5f3b135379b9f6da"
 val kamonExecutors  = "io.kamon" %% "kamon-executors"       % "1.0.0-RC1-24f29c9a3c52663ada75fd85edcc5fd3810e97a2"              exclude("io.kamon", "kamon-core")
-val kamonScalaKa    = "io.kamon" %% "kamon-scala"           % "experimental-1.0.0-RC1-9a93b42263e5ef2519e217312e2a8bbb28e71323" exclude("io.kamon", "kamon-core")
+val kamonScalaKa    = "io.kamon" %% "kamon-scala"           % "experimental-1.0.0-RC1-dcaa11f531892b72a8eb860b17566ccb74b669d8" exclude("io.kamon", "kamon-core")
 val scalaExtension  = "io.kamon" %% "agent-scala-extension" % `kamon-agent-version`
 
 

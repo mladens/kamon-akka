@@ -16,11 +16,9 @@
 
 package akka.kamon.instrumentation
 
-//import akka.event.Logging.LogEvent
-//import kamon.agent.libs.net.bytebuddy.asm.Advice.{Argument, Enter, OnMethodEnter, OnMethodExit}
 import kamon.agent.scala.KamonInstrumentation
-import kamon.util.HasContinuation
-//import org.slf4j.MDC
+import kamon.akka.instrumentation.advisor.BaggageOnMDCAdvisor
+import kamon.instrumentation.mixin.HasContinuationMixin
 
 class ActorLoggingInstrumentation extends KamonInstrumentation {
 
@@ -32,7 +30,7 @@ class ActorLoggingInstrumentation extends KamonInstrumentation {
     */
   forSubtypeOf("akka.event.Logging$LogEvent") { builder ⇒
     builder
-      .withMixin(classOf[HasContinuation])
+      .withMixin(classOf[HasContinuationMixin])
       .build()
   }
 
@@ -42,31 +40,10 @@ class ActorLoggingInstrumentation extends KamonInstrumentation {
     *  akka.event.slf4j.Slf4jLogger::withMdc
     *
     */
-//  forTargetType("akka.event.slf4j.Slf4jLogger") { builder ⇒
-//    builder
-//      .withAdvisorFor(named("withMdc"), classOf[WithMdcMethodAdvisor])
-//      .build()
-//  }
-//}
-
-/**
-  * Advisor for akka.event.slf4j.Slf4jLogger::withMdc
-  */
-//class WithMdcMethodAdvisor
-//object WithMdcMethodAdvisor {
-//  @OnMethodEnter
-//  def onEnter(@Argument(1) logEvent: HasContinuation): Iterable[String] = {
-//     logEvent.x
-//    val ctx: TraceContext = logEvent.asInstanceOf[TraceContextAware].traceContext
-//    Tracer.setCurrentContext(ctx)
-//    copyToMdc(ctx)
-//  }
-
-//  @OnMethodExit
-//  def onExit(@Enter keys: Iterable[String]): Unit = {
-//    keys.foreach(key ⇒ MDC.remove(key))
-//    Tracer.currentContext.finish()
-//  }
-  //TODO:kamon.trace.logging.MdcKeysSupport#copyToMdc should be public :(
-//  private def copyToMdc(traceContext: TraceContext): Iterable[String] = Iterable.empty
+  forTargetType("akka.event.slf4j.Slf4jLogger") { builder ⇒
+    builder
+      .withAdvisorFor(named("withMdc"), classOf[BaggageOnMDCAdvisor])
+      .build()
+  }
 }
+
