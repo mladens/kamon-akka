@@ -1,3 +1,4 @@
+
 /* =========================================================================================
  * Copyright © 2013-2016 the kamon project <http://kamon.io/>
  *
@@ -58,6 +59,7 @@ lazy val kamonAkka25 = Project("kamon-akka-25", file("kamon-akka-2.5.x"))
   .settings(
     libraryDependencies ++=
       compileScope(akkaDependency("actor", `akka-2.5`), kamonCore, kamonScala, kamonExecutors) ++
+      compileScope(akkaDependency("stream", `akka-2.5`), kamonCore, kamonScala, kamonExecutors) ++
       providedScope(aspectJ) ++
       optionalScope(logbackClassic) ++
       testScope(scalatest, kamonTestkit, akkaDependency("testkit", `akka-2.5`), akkaDependency("slf4j", `akka-2.5`), logbackClassic))

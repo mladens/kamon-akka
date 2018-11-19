@@ -14,6 +14,15 @@
     <aspect name="akka.kamon.instrumentation.RoutedActorCellInstrumentation"/>
     <aspect name="akka.kamon.instrumentation.ActorLoggingInstrumentation"/>
 
+    <!-- Streams -->
+    <aspect name="akka.stream.instrumentation.StageInterpretationInstrumentation"/>
+    <aspect name="akka.stream.instrumentation.BoundaryInstrumentation"/>
+    <aspect name="akka.stream.instrumentation.AsyncCallbackInstrumentation"/>
+    <aspect name="akka.stream.instrumentation.BufferingStagesInstrumentation"/>
+    <aspect name="akka.stream.instrumentation.StreamOfStreamsInstrumentation"/>
+    <aspect name="akka.stream.instrumentation.SourceInstrumentation"/>
+
+
     <aspect name="akka.kamon.instrumentation.DeadLettersInstrumentation"/>
 
     <!-- Dispatchers -->
