@@ -22,7 +22,6 @@ val kamonExecutors  = "io.kamon" %% "kamon-executors"    % "1.0.3-M1"
 
 val kanelaScalaExtension  = "io.kamon"  %%  "kanela-scala-extension"  % "0.0.14"
 
-val `akka-2.4` = "2.4.20"
 val `akka-2.5` = "2.5.13"
 
 def akkaDependency(name: String, version: String) = {
@@ -32,21 +31,7 @@ def akkaDependency(name: String, version: String) = {
 lazy val `kamon-akka` = (project in file("."))
   .settings(noPublishing: _*)
   .settings(scalacOptions += "-target:jvm-1.8")
-  .aggregate(kamonAkka24, kamonAkka25)
-
-
-lazy val kamonAkka24 = Project("kamon-akka-24", file("kamon-akka-2.4.x"))
-  .settings(Seq(
-    bintrayPackage := "kamon-akka",
-    moduleName := "kamon-akka-2.4",
-    resolvers += Resolver.bintrayRepo("kamon-io", "snapshots")))
-  .enablePlugins(JavaAgent)
-  .settings(javaAgents ++= resolveAgent)
-  .settings(
-    libraryDependencies ++=
-      compileScope(akkaDependency("actor", `akka-2.4`), kamonCore, kamonScala, kamonExecutors) ++
-      optionalScope(logbackClassic) ++
-      testScope(scalatest, kamonTestkit, akkaDependency("testkit", `akka-2.4`), akkaDependency("slf4j", `akka-2.4`), logbackClassic))
+  .aggregate(kamonAkka25)
 
 lazy val kamonAkka25 = Project("kamon-akka-25", file("kamon-akka-2.5.x"))
   .settings(Seq(
@@ -54,7 +39,7 @@ lazy val kamonAkka25 = Project("kamon-akka-25", file("kamon-akka-2.5.x"))
     moduleName := "kamon-akka-2.5",
     resolvers += Resolver.bintrayRepo("kamon-io", "snapshots")))
   .enablePlugins(JavaAgent)
-  .settings(javaAgents ++= resolveAgent)
+  .settings(javaAgents += "io.kamon" % "kanela-agent" % "0.0.15" % "compile;test")
   .settings(publishArtifact in (Compile, packageDoc) := false)
   .settings(publishArtifact in packageDoc := false)
   .settings(sources in (Compile,doc) := Seq.empty)
@@ -64,10 +49,3 @@ lazy val kamonAkka25 = Project("kamon-akka-25", file("kamon-akka-2.5.x"))
       optionalScope(logbackClassic) ++
       testScope(scalatest, kamonTestkit, akkaDependency("testkit", `akka-2.5`), akkaDependency("slf4j", `akka-2.5`), logbackClassic))
 
-def resolveAgent: Seq[ModuleID] = {
-    val agent = Option(System.getProperty("agent")).getOrElse("aspectj")
-    if(agent.equalsIgnoreCase("kanela"))
-        Seq("org.aspectj" % "aspectjweaver" % "1.9.1" % "compile", "io.kamon" % "kanela-agent" % "0.0.15" % "compile;test")
-    else
-        Seq("org.aspectj" % "aspectjweaver" % "1.9.1" % "compile;test", "io.kamon" % "kanela-agent" % "0.0.15" % "compile")
-}
