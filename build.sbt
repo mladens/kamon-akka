@@ -21,6 +21,7 @@ val kamonScala      = "io.kamon" %% "kamon-scala-future" % "1.1.0-M1"
 val kamonExecutors  = "io.kamon" %% "kamon-executors"    % "1.0.3-M1"
 
 val kanelaScalaExtension  = "io.kamon"  %%  "kanela-scala-extension"  % "0.0.14"
+val kanelaAgent           = "io.kamon"  %   "kanela-agent"            % "0.0.15"
 
 val `akka-2.5` = "2.5.13"
 
@@ -39,7 +40,7 @@ lazy val kamonAkka25 = Project("kamon-akka-25", file("kamon-akka-2.5.x"))
     moduleName := "kamon-akka-2.5",
     resolvers += Resolver.bintrayRepo("kamon-io", "snapshots")))
   .enablePlugins(JavaAgent)
-  .settings(javaAgents += "io.kamon" % "kanela-agent" % "0.0.15" % "compile;test")
+  .settings(javaAgents += kanelaAgent % "compile;test")
   .settings(publishArtifact in (Compile, packageDoc) := false)
   .settings(publishArtifact in packageDoc := false)
   .settings(sources in (Compile,doc) := Seq.empty)
