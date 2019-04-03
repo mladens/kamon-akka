@@ -20,21 +20,3 @@ object InstrumentedEnvelope {
       this.timestampedContext = timestampedContext
   }
 }
-
-@Aspect
-class EnvelopeContextIntoEnvelopeMixin {
-
-  @DeclareMixin("akka.dispatch.Envelope")
-  def mixinInstrumentationToEnvelope: InstrumentedEnvelope = InstrumentedEnvelope()
-
-
-  /**
-    *   Ensure the context is kept if the envelope is copied
-    */
-  @Around("execution(* akka.dispatch.Envelope.copy(..)) && this(envelope)")
-  def aroundSerializeAndDeserialize(pjp: ProceedingJoinPoint, envelope: Envelope): Any = {
-    val newEnvelope = pjp.proceed()
-    newEnvelope.asInstanceOf[InstrumentedEnvelope].setTimestampedContext(envelope.asInstanceOf[InstrumentedEnvelope].timestampedContext())
-    newEnvelope
-  }
-}
