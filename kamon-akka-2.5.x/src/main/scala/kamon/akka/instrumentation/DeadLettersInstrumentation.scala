@@ -1,9 +1,7 @@
 package akka.kamon.instrumentation
 
 
-import akka.actor.{ActorSystem, DeadLetter, UnhandledMessage}
-import kamon.akka.Metrics
-import org.aspectj.lang.annotation.{After, Aspect, DeclareMixin, Pointcut}
+import akka.actor.ActorSystem
 
 trait HasSystem {
   def system: ActorSystem

@@ -19,17 +19,15 @@ package akka.kamon.instrumentation
 import java.lang.reflect.Method
 import java.util.concurrent.ExecutorService
 
-import akka.actor.{ActorContext, ActorSystem, ActorSystemImpl, Props}
+import akka.actor.ActorSystem
 import akka.dispatch.forkjoin.ForkJoinPool
 import akka.dispatch._
 import akka.kamon.instrumentation.LookupDataAware.LookupData
 import kamon.Kamon
 import kamon.akka.Akka
-import kamon.executors.Executors.{ForkJoinPoolMetrics, InstrumentedExecutorService}
+import kamon.executors.Executors.ForkJoinPoolMetrics
 import kamon.executors.Executors
 import kamon.util.Registration
-import org.aspectj.lang.ProceedingJoinPoint
-import org.aspectj.lang.annotation._
 
 import scala.collection.concurrent.TrieMap
 

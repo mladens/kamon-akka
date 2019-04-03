@@ -1,10 +1,6 @@
 package akka.kamon.instrumentation
 
-import akka.actor.{ Props, ActorRef, ActorSystem, Cell }
-import akka.dispatch.{ Envelope, MessageDispatcher }
-import akka.routing.RoutedActorCell
-import org.aspectj.lang.ProceedingJoinPoint
-import org.aspectj.lang.annotation._
+import akka.actor.Props
 
 
 trait RouterInstrumentationAware {

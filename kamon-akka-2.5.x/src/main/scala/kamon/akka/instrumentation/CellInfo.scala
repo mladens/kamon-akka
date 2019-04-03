@@ -15,7 +15,7 @@
 package akka.kamon.instrumentation
 
 import akka.actor.{ActorRef, ActorSystem, Cell, Deployer, ExtendedActorSystem}
-import akka.routing.{BalancingPool, NoRouter, RoutedActorCell, RoutedActorRef}
+import akka.routing.{BalancingPool, NoRouter, RoutedActorRef}
 import kamon.Kamon
 import kamon.akka.Akka
 

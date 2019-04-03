@@ -8,13 +8,9 @@ import kamon.akka.Metrics
 import kamon.akka.Metrics.{ActorGroupMetrics, ActorMetrics, RouterMetrics}
 import kamon.context.Storage.Scope
 import kamon.trace.Span
-import kamon.trace.SpanContext.SamplingDecision
-import kamon.util.Clock
-import org.aspectj.lang.ProceedingJoinPoint
 
 trait ActorMonitor {
   def captureEnvelopeContext(): TimestampedContext
-  def processMessage(pjp: ProceedingJoinPoint, envelopeContext: TimestampedContext, envelope: Envelope): AnyRef
   def processFailure(failure: Throwable): Unit
   def processDroppedMessage(count: Long): Unit
   def cleanup(): Unit
@@ -82,22 +78,6 @@ object ActorMonitors {
       monitor.captureEnvelopeContext()
     }
 
-    override def processMessage(pjp: ProceedingJoinPoint, envelopeContext: TimestampedContext, envelope: Envelope): AnyRef = {
-      val isSampled = envelopeContext.context.get(Span.ContextKey).context().samplingDecision == SamplingDecision.Sample
-
-      if(isSampled) {
-        val messageSpan = buildSpan(cellInfo, envelopeContext, envelope)
-        val contextWithMessageSpan = envelopeContext.context.withKey(Span.ContextKey, messageSpan)
-
-        try {
-          monitor.processMessage(pjp, envelopeContext.copy(context = contextWithMessageSpan), envelope)
-        } finally {
-          messageSpan.finish()
-        }
-      } else {
-        monitor.processMessage(pjp, envelopeContext, envelope)
-      }
-    }
 
     override val processMessageStartTimestamp: Long = 0L
 
@@ -146,14 +126,6 @@ object ActorMonitors {
       TimestampedContext(envelopeTimestamp, Kamon.currentContext())
     }
 
-    def processMessage(pjp: ProceedingJoinPoint, envelopeContext: TimestampedContext, envelope: Envelope): AnyRef = {
-      processedMessagesCounter.increment()
-
-      Kamon.withContext(envelopeContext.context) {
-        pjp.proceed()
-      }
-    }
-
     def processFailure(failure: Throwable): Unit = {}
     def processDroppedMessage(count: Long): Unit = {}
     def cleanup(): Unit = {
@@ -197,28 +169,6 @@ object ActorMonitors {
         am.mailboxSize.increment()
       }
       super.captureEnvelopeContext()
-    }
-
-    def processMessage(pjp: ProceedingJoinPoint, envelopeContext: TimestampedContext, envelope: Envelope): AnyRef = {
-      val timestampBeforeProcessing = Kamon.clock().nanos()
-      processedMessagesCounter.increment()
-
-      try {
-        Kamon.withContext(envelopeContext.context) {
-          pjp.proceed()
-        }
-      } finally {
-        val timestampAfterProcessing = Kamon.clock().nanos()
-        val timeInMailbox = timestampBeforeProcessing - envelopeContext.nanoTime
-        val processingTime = timestampAfterProcessing - timestampBeforeProcessing
-
-        actorMetrics.foreach { am =>
-          am.processingTime.record(processingTime)
-          am.timeInMailbox.record(timeInMailbox)
-          am.mailboxSize.decrement()
-        }
-        recordProcessMetrics(processingTime, timeInMailbox)
-      }
     }
 
     def processMessageStartTimestamp: Long = Kamon.clock().nanos()
@@ -272,26 +222,6 @@ object ActorMonitors {
     override def captureEnvelopeContext(): TimestampedContext = {
       routerMetrics.pendingMessages.increment()
       super.captureEnvelopeContext()
-    }
-
-    def processMessage(pjp: ProceedingJoinPoint, envelopeContext: TimestampedContext, envelope: Envelope): AnyRef = {
-      val timestampBeforeProcessing = Kamon.clock().nanos()
-      processedMessagesCounter.increment()
-
-      try {
-        Kamon.withContext(envelopeContext.context) {
-          pjp.proceed()
-        }
-      } finally {
-        val timestampAfterProcessing = Kamon.clock().nanos()
-        val timeInMailbox = timestampBeforeProcessing - envelopeContext.nanoTime
-        val processingTime = timestampAfterProcessing - timestampBeforeProcessing
-
-        routerMetrics.processingTime.record(processingTime)
-        routerMetrics.timeInMailbox.record(timeInMailbox)
-        routerMetrics.pendingMessages.decrement()
-        recordProcessMetrics(processingTime, timeInMailbox)
-      }
     }
 
     def processMessageStartTimestamp(): Long = Kamon.clock().nanos()
