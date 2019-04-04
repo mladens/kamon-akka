@@ -20,6 +20,7 @@ import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import akka.event.Logging.LogEvent
 import akka.testkit.{ImplicitSender, TestKit}
 import kamon.Kamon
+import kamon.akka.context.ContextContainer
 import kamon.instrumentation.Mixin.HasContext
 import kamon.testkit.ContextTesting
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
@@ -40,7 +41,7 @@ class ActorLoggingInstrumentationSpec extends TestKit(ActorSystem("ActorCellInst
         case _: LogEvent ⇒ false
       }
 
-      Kamon.withContext(logEvent.asInstanceOf[HasContext].context) {
+      Kamon.withContext(logEvent.asInstanceOf[ContextContainer].context) {
         val keyValueFromContext = Kamon.currentContext().get(StringKey).getOrElse("MissingContext")
         keyValueFromContext should be("propagate-when-logging")
       }

@@ -19,7 +19,6 @@ package kamon.akka25.instrumentation.kanela
 import akka.event.Logging.LogEvent
 import kamon.Kamon
 import kamon.context.Storage.Scope
-import kamon.instrumentation.Mixin.HasContext
 import kanela.agent.libs.net.bytebuddy.asm.Advice.{Argument, Enter, OnMethodEnter, OnMethodExit}
 import kanela.agent.scala.KanelaInstrumentation
 import kamon.akka25.instrumentation.kanela.AkkaVersionedFilter._

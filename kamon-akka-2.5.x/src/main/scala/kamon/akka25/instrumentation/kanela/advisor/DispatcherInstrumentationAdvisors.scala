@@ -16,6 +16,7 @@
 
 package akka.kamon.akka25.instrumentation.kanela.advisor
 
+import java.io.Closeable
 import java.util.concurrent.ExecutorService
 
 import akka.actor.{ActorContext, ActorSystem, Props}
@@ -27,7 +28,7 @@ import kamon.Kamon
 import kamon.akka.Akka
 import kamon.akka25.instrumentation.kanela.bridge.AkkaDispatcherBridge
 import kamon.executors.Executors
-import kamon.util.Registration
+import kamon.tag.TagSet
 import kanela.agent.libs.net.bytebuddy.asm.Advice
 import kanela.agent.libs.net.bytebuddy.asm.Advice._
 
@@ -129,7 +130,7 @@ object ShutdownMethodAdvisor {
     val lookupData = lazyExecutor.asInstanceOf[LookupDataAware].lookupData
 
     if (lookupData.actorSystem != null) {
-      registeredDispatchers.remove(lookupData.dispatcherName).foreach(_.cancel())
+      registeredDispatchers.remove(lookupData.dispatcherName).foreach(_.close())
     }
   }
 }
@@ -153,7 +154,7 @@ object NewRouteeMethodAdvisor {
 
 
 object DispatcherInstrumentationAdvisors {
-  val registeredDispatchers = TrieMap.empty[String, Registration]
+  val registeredDispatchers = TrieMap.empty[String, Closeable]
 
   def extractExecutor(dispatcher: MessageDispatcher): ExecutorService = {
     val executor = dispatcher.asInstanceOf[AkkaDispatcherBridge].kamon$executorService()
@@ -166,10 +167,10 @@ object DispatcherInstrumentationAdvisors {
 
   def registerDispatcher(dispatcherName: String, executorService: ExecutorService, system: ActorSystem): Unit = {
     if(Kamon.filter(Akka.DispatcherFilterName, dispatcherName)) {
-      val additionalTags = Map("actor-system" -> system.name)
+      val additionalTags = TagSet.from("actor-system", system.name)
       val dispatcherRegistration = Executors.register(dispatcherName, additionalTags, executorService)
 
-      registeredDispatchers.put(dispatcherName, dispatcherRegistration).foreach(_.cancel())
+      registeredDispatchers.put(dispatcherName, dispatcherRegistration).foreach(_.close())
     }
   }
 }

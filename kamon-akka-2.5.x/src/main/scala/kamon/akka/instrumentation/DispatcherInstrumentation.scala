@@ -16,6 +16,7 @@
 
 package akka.kamon.instrumentation
 
+import java.io.Closeable
 import java.lang.reflect.Method
 import java.util.concurrent.ExecutorService
 
@@ -27,12 +28,12 @@ import kamon.Kamon
 import kamon.akka.Akka
 import kamon.executors.Executors.ForkJoinPoolMetrics
 import kamon.executors.Executors
-import kamon.util.Registration
+import kamon.tag.TagSet
 
 import scala.collection.concurrent.TrieMap
 
 object DispatcherInstrumentation {
-  private val registeredDispatchers = TrieMap.empty[String, Registration]
+  private val registeredDispatchers = TrieMap.empty[String, Closeable]
 
   implicit object AkkaFJPMetrics extends ForkJoinPoolMetrics[ForkJoinPool] {
     override def minThreads(pool: ForkJoinPool)     = 0
@@ -68,9 +69,9 @@ class DispatcherInstrumentation {
 
   private def registerDispatcher(dispatcherName: String, executorService: ExecutorService, system: ActorSystem): Unit = {
     if(Kamon.filter(Akka.DispatcherFilterName, dispatcherName)) {
-      val additionalTags = Map("actor-system" -> system.name)
+      val additionalTags = TagSet.from("actor-system", system.name)
       val dispatcherRegistration = Executors.register(dispatcherName, additionalTags, executorService)
-      registeredDispatchers.put(dispatcherName, dispatcherRegistration).foreach(_.cancel())
+      registeredDispatchers.put(dispatcherName, dispatcherRegistration).foreach(_.close())
     }
   }
 }
