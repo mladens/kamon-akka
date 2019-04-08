@@ -15,23 +15,20 @@
 
 package kamon.akka
 
-
-import java.nio.LongBuffer
-
 import akka.actor._
 import akka.routing._
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
-import kamon.Kamon
 import org.scalactic.TimesOnInt._
 import Metrics._
 import kamon.akka.RouterMetricsTestActor._
-import kamon.testkit.MetricInspection
+import kamon.tag.TagSet
+import kamon.testkit.{InstrumentInspection, MetricInspection}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 import scala.concurrent.duration._
 
-class RouterMetricsSpec extends TestKit(ActorSystem("RouterMetricsSpec")) with WordSpecLike with MetricInspection with Matchers
+class RouterMetricsSpec extends TestKit(ActorSystem("RouterMetricsSpec")) with WordSpecLike with MetricInspection.Syntax with InstrumentInspection.Syntax with Matchers
   with BeforeAndAfterAll with ImplicitSender with Eventually {
 
   "the Kamon router metrics" should {
@@ -40,9 +37,9 @@ class RouterMetricsSpec extends TestKit(ActorSystem("RouterMetricsSpec")) with W
       createTestPoolRouter("non-tracked-pool-router")
       createTestPoolRouter("tracked-explicitly-excluded-pool-router")
 
-      routerProcessingTime.valuesForTag("path") should contain("RouterMetricsSpec/user/tracked-pool-router")
-      routerProcessingTime.valuesForTag("path") shouldNot contain("RouterMetricsSpec/user/non-tracked-pool-router")
-      routerProcessingTime.valuesForTag("path") shouldNot contain("RouterMetricsSpec/user/tracked-explicitly-excluded-pool-router")
+      routerProcessingTime.tagValues("path") should contain("RouterMetricsSpec/user/tracked-pool-router")
+      routerProcessingTime.tagValues("path") shouldNot contain("RouterMetricsSpec/user/non-tracked-pool-router")
+      routerProcessingTime.tagValues("path") shouldNot contain("RouterMetricsSpec/user/tracked-explicitly-excluded-pool-router")
     }
 
 
@@ -54,7 +51,7 @@ class RouterMetricsSpec extends TestKit(ActorSystem("RouterMetricsSpec")) with W
       listener.expectMsg(Pong)
 
       eventually {
-        routerRoutingTime.refine(routerTags("RouterMetricsSpec/user/measuring-routing-time-in-pool-router"))
+        routerRoutingTime.withTags(routerTags("RouterMetricsSpec/user/measuring-routing-time-in-pool-router"))
           .distribution(resetState = false).count should be(1L)
       }
     }
@@ -66,7 +63,7 @@ class RouterMetricsSpec extends TestKit(ActorSystem("RouterMetricsSpec")) with W
       router.tell(RouterTrackTimings(sleep = Some(1 second)), timingsListener.ref)
       val timings = timingsListener.expectMsgType[RouterTrackedTimings]
       val processingTimeDistribution = routerProcessingTime
-        .refine(routerTags("RouterMetricsSpec/user/measuring-processing-time-in-pool-router")).distribution()
+        .withTags(routerTags("RouterMetricsSpec/user/measuring-processing-time-in-pool-router")).distribution()
 
       processingTimeDistribution.count should be(1L)
       processingTimeDistribution.buckets.head.frequency should be(1L)
@@ -84,7 +81,7 @@ class RouterMetricsSpec extends TestKit(ActorSystem("RouterMetricsSpec")) with W
 
       eventually {
         routerErrors
-          .refine(routerTags("RouterMetricsSpec/user/measuring-errors-in-pool-router")).value(resetState = false) should be(10L)
+          .withTags(routerTags("RouterMetricsSpec/user/measuring-errors-in-pool-router")).value(resetState = false) should be(10L)
       }
     }
 
@@ -96,7 +93,7 @@ class RouterMetricsSpec extends TestKit(ActorSystem("RouterMetricsSpec")) with W
       val timings = timingsListener.expectMsgType[RouterTrackedTimings]
 
       val timeInMailboxDistribution = routerTimeInMailbox
-        .refine(routerTags("RouterMetricsSpec/user/measuring-time-in-mailbox-in-pool-router")).distribution()
+        .withTags(routerTags("RouterMetricsSpec/user/measuring-time-in-mailbox-in-pool-router")).distribution()
 
       timeInMailboxDistribution.count should be(1L)
       timeInMailboxDistribution.buckets.head.frequency should be(1L)
@@ -111,7 +108,7 @@ class RouterMetricsSpec extends TestKit(ActorSystem("RouterMetricsSpec")) with W
       val timings = timingsListener.expectMsgType[RouterTrackedTimings]
 
       val timeInMailboxDistribution = routerTimeInMailbox
-        .refine(routerTags("RouterMetricsSpec/user/measuring-time-in-mailbox-in-balancing-pool-router") ++
+        .withTags(routerTags("RouterMetricsSpec/user/measuring-time-in-mailbox-in-balancing-pool-router") ++
           Map("dispatcher" -> "BalancingPool-/measuring-time-in-mailbox-in-balancing-pool-router")
         ).distribution()
 
@@ -125,7 +122,7 @@ class RouterMetricsSpec extends TestKit(ActorSystem("RouterMetricsSpec")) with W
       val timingsListener = TestProbe()
       val router = createTestPoolRouter("measuring-pending-messages-in-pool-router", true)
       def pendingMessagesDistribution = routerPendingMessages
-        .refine(routerTags("RouterMetricsSpec/user/measuring-pending-messages-in-pool-router")).distribution()
+        .withTags(routerTags("RouterMetricsSpec/user/measuring-pending-messages-in-pool-router")).distribution()
 
       10 times { router.tell(RouterTrackTimings(sleep = Some(1 second)), timingsListener.ref)}
       10 times { timingsListener.expectMsgType[RouterTrackedTimings] }
@@ -141,7 +138,7 @@ class RouterMetricsSpec extends TestKit(ActorSystem("RouterMetricsSpec")) with W
       val timingsListener = TestProbe()
       val router = createTestBalancingPoolRouter("measuring-pending-messages-in-balancing-pool-router", true)
       def pendingMessagesDistribution = routerPendingMessages
-        .refine(routerTags("RouterMetricsSpec/user/measuring-pending-messages-in-balancing-pool-router") ++
+        .withTags(routerTags("RouterMetricsSpec/user/measuring-pending-messages-in-balancing-pool-router") ++
           Map("dispatcher" -> "BalancingPool-/measuring-pending-messages-in-balancing-pool-router")).distribution()
 
       10 times { router.tell(RouterTrackTimings(sleep = Some(1 second)), timingsListener.ref)}
@@ -158,7 +155,7 @@ class RouterMetricsSpec extends TestKit(ActorSystem("RouterMetricsSpec")) with W
       val timingsListener = TestProbe()
       val router = createTestPoolRouter("measuring-members-in-pool-router", true)
       def membersDistribution = routerMembers
-        .refine(routerTags("RouterMetricsSpec/user/measuring-members-in-pool-router")).distribution()
+        .withTags(routerTags("RouterMetricsSpec/user/measuring-members-in-pool-router")).distribution()
 
       for(routeesLeft <- 4 to 0 by -1) {
         100 times { router.tell(Discard, timingsListener.ref) }
@@ -174,7 +171,7 @@ class RouterMetricsSpec extends TestKit(ActorSystem("RouterMetricsSpec")) with W
       val timingsListener = TestProbe()
       val router = createTestBalancingPoolRouter("measuring-members-in-balancing-pool-router", true)
       def membersDistribution = routerMembers
-        .refine(routerTags("RouterMetricsSpec/user/measuring-members-in-balancing-pool-router") ++
+        .withTags(routerTags("RouterMetricsSpec/user/measuring-members-in-balancing-pool-router") ++
           Map("dispatcher" -> "BalancingPool-/measuring-members-in-balancing-pool-router")).distribution()
 
       for(routeesLeft <- 4 to 0 by -1) {
@@ -205,7 +202,7 @@ class RouterMetricsSpec extends TestKit(ActorSystem("RouterMetricsSpec")) with W
       val timingsListener = TestProbe()
       val router = createTestPoolRouter("cleanup-pending-messages-in-pool-router", true)
       def pendingMessagesDistribution = routerPendingMessages
-        .refine(routerTags("RouterMetricsSpec/user/cleanup-pending-messages-in-pool-router")).distribution()
+        .withTags(routerTags("RouterMetricsSpec/user/cleanup-pending-messages-in-pool-router")).distribution()
 
       10 times { router.tell(RouterTrackTimings(sleep = Some(1 second)), timingsListener.ref)}
       1 times { router.tell(Die, timingsListener.ref)}
@@ -223,7 +220,7 @@ class RouterMetricsSpec extends TestKit(ActorSystem("RouterMetricsSpec")) with W
       val timingsListener = TestProbe()
       val router = createTestBalancingPoolRouter("cleanup-pending-messages-in-balancing-pool-router", true)
       def pendingMessagesDistribution = routerPendingMessages
-        .refine(routerTags("RouterMetricsSpec/user/cleanup-pending-messages-in-balancing-pool-router") ++
+        .withTags(routerTags("RouterMetricsSpec/user/cleanup-pending-messages-in-balancing-pool-router") ++
           Map("dispatcher" -> "BalancingPool-/cleanup-pending-messages-in-balancing-pool-router")).distribution()
 
       10 times { router.tell(RouterTrackTimings(sleep = Some(1 second)), timingsListener.ref)}
@@ -240,7 +237,7 @@ class RouterMetricsSpec extends TestKit(ActorSystem("RouterMetricsSpec")) with W
 
     "clean up the associated recorder when the pool router is stopped" in new RouterMetricsFixtures {
       val trackedRouter = createTestPoolRouter("stop-in-pool-router")
-      routerProcessingTime.valuesForTag("path") should contain("RouterMetricsSpec/user/stop-in-pool-router")
+      routerProcessingTime.tagValues("path") should contain("RouterMetricsSpec/user/stop-in-pool-router")
 
       // Killing the router should remove it's RouterMetrics and registering again bellow should create a new one.
       val deathWatcher = TestProbe()
@@ -248,7 +245,7 @@ class RouterMetricsSpec extends TestKit(ActorSystem("RouterMetricsSpec")) with W
       trackedRouter ! PoisonPill
       deathWatcher.expectTerminated(trackedRouter)
 
-      routerProcessingTime.valuesForTag("path") shouldNot contain("RouterMetricsSpec/user/stop-in-pool-router")
+      routerProcessingTime.tagValues("path") shouldNot contain("RouterMetricsSpec/user/stop-in-pool-router")
     }
   }
 
@@ -256,15 +253,17 @@ class RouterMetricsSpec extends TestKit(ActorSystem("RouterMetricsSpec")) with W
 
   override protected def afterAll(): Unit = shutdown()
 
-  def routerTags(path: String): Map[String, String] = {
+  def routerTags(path: String): TagSet = {
     val routerClass = if(path.contains("balancing")) "akka.routing.BalancingPool" else "akka.routing.RoundRobinPool"
 
-    Map(
-      "path" -> path,
-      "system" -> "RouterMetricsSpec",
-      "dispatcher" -> "akka.actor.default-dispatcher",
-      "routeeClass" -> "kamon.akka.RouterMetricsTestActor",
-      "routerClass" -> routerClass
+    TagSet(
+      Map(
+        "path" -> path,
+        "system" -> "RouterMetricsSpec",
+        "dispatcher" -> "akka.actor.default-dispatcher",
+        "routeeClass" -> "kamon.akka.RouterMetricsTestActor",
+        "routerClass" -> routerClass
+      )
     )
   }
 
@@ -284,10 +283,10 @@ class RouterMetricsSpec extends TestKit(ActorSystem("RouterMetricsSpec")) with W
 
       // Cleanup all the metric recording instruments:
       if(resetState) {
-        routerRoutingTime.refine(routerTags(s"RouterMetricsSpec/user/$routerName")).distribution(resetState = true)
-        routerTimeInMailbox.refine(routerTags(s"RouterMetricsSpec/user/$routerName")).distribution(resetState = true)
-        routerProcessingTime.refine(routerTags(s"RouterMetricsSpec/user/$routerName")).distribution(resetState = true)
-        routerErrors.refine(routerTags(s"RouterMetricsSpec/user/$routerName")).value(resetState = true)
+        routerRoutingTime.withTags(routerTags(s"RouterMetricsSpec/user/$routerName")).distribution(resetState = true)
+        routerTimeInMailbox.withTags(routerTags(s"RouterMetricsSpec/user/$routerName")).distribution(resetState = true)
+        routerProcessingTime.withTags(routerTags(s"RouterMetricsSpec/user/$routerName")).distribution(resetState = true)
+        routerErrors.withTags(routerTags(s"RouterMetricsSpec/user/$routerName")).value(resetState = true)
       }
 
       group
@@ -303,12 +302,12 @@ class RouterMetricsSpec extends TestKit(ActorSystem("RouterMetricsSpec")) with W
 
       // Cleanup all the metric recording instruments:
       if(resetState) {
-        routerRoutingTime.refine(routerTags(s"RouterMetricsSpec/user/$routerName")).distribution(resetState = true)
-        routerTimeInMailbox.refine(routerTags(s"RouterMetricsSpec/user/$routerName")).distribution(resetState = true)
-        routerProcessingTime.refine(routerTags(s"RouterMetricsSpec/user/$routerName")).distribution(resetState = true)
-        routerErrors.refine(routerTags(s"RouterMetricsSpec/user/$routerName")).value(resetState = true)
-        routerPendingMessages.refine(routerTags(s"RouterMetricsSpec/user/$routerName")).distribution(resetState = true)
-        routerMembers.refine(routerTags(s"RouterMetricsSpec/user/$routerName")).distribution(resetState = true)
+        routerRoutingTime.withTags(routerTags(s"RouterMetricsSpec/user/$routerName")).distribution(resetState = true)
+        routerTimeInMailbox.withTags(routerTags(s"RouterMetricsSpec/user/$routerName")).distribution(resetState = true)
+        routerProcessingTime.withTags(routerTags(s"RouterMetricsSpec/user/$routerName")).distribution(resetState = true)
+        routerErrors.withTags(routerTags(s"RouterMetricsSpec/user/$routerName")).value(resetState = true)
+        routerPendingMessages.withTags(routerTags(s"RouterMetricsSpec/user/$routerName")).distribution(resetState = true)
+        routerMembers.withTags(routerTags(s"RouterMetricsSpec/user/$routerName")).distribution(resetState = true)
       }
 
       router
@@ -324,15 +323,15 @@ class RouterMetricsSpec extends TestKit(ActorSystem("RouterMetricsSpec")) with W
 
       // Cleanup all the metric recording instruments:
       if(resetState) {
-        val tags = routerTags(s"RouterMetricsSpec/user/$routerName") ++
-          Map("dispatcher" -> s"BalancingPool-/$routerName")
+        val tags = routerTags(s"RouterMetricsSpec/user/$routerName")
+            .withTag("dispatcher", s"BalancingPool-/$routerName")
 
-        routerRoutingTime.refine(tags).distribution(resetState = true)
-        routerTimeInMailbox.refine(tags).distribution(resetState = true)
-        routerProcessingTime.refine(tags).distribution(resetState = true)
-        routerPendingMessages.refine(tags).distribution(resetState = true)
-        routerMembers.refine(tags).distribution(resetState = true)
-        routerErrors.refine(tags).value(resetState = true)
+        routerRoutingTime.withTags(tags).distribution(resetState = true)
+        routerTimeInMailbox.withTags(tags).distribution(resetState = true)
+        routerProcessingTime.withTags(tags).distribution(resetState = true)
+        routerPendingMessages.withTags(tags).distribution(resetState = true)
+        routerMembers.withTags(tags).distribution(resetState = true)
+        routerErrors.withTags(tags).value(resetState = true)
       }
 
       router

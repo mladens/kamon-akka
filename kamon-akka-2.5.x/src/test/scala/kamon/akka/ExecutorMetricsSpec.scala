@@ -34,7 +34,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future, Promise}
 
 
-class ExecutorMetricsSpec extends WordSpec with Matchers with MetricInspection with Eventually {
+class ExecutorMetricsSpec extends WordSpec with Matchers with MetricInspection.Syntax with Eventually {
 
 
   implicit override val patienceConfig =

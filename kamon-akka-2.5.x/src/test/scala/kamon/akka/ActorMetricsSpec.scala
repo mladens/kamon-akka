@@ -23,26 +23,28 @@ import akka.actor._
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import Metrics._
 import kamon.akka.ActorMetricsTestActor._
-import kamon.testkit.MetricInspection
+import kamon.tag.TagSet
+import kamon.testkit.{InstrumentInspection, MetricInspection}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import kamon.testkit.InstrumentInspection.Syntax
 
-class ActorMetricsSpec extends TestKit(ActorSystem("ActorMetricsSpec")) with WordSpecLike with MetricInspection with Matchers
+class ActorMetricsSpec extends TestKit(ActorSystem("ActorMetricsSpec")) with WordSpecLike with MetricInspection.Syntax with InstrumentInspection.Syntax with Matchers
     with BeforeAndAfterAll with ImplicitSender with Eventually {
 
   "the Kamon actor metrics" should {
     "respect the configured include and exclude filters" in new ActorMetricsFixtures {
       val trackedActor = createTestActor("tracked-actor")
-      actorProcessingTimeMetric.valuesForTag("path") should contain("ActorMetricsSpec/user/tracked-actor")
+      actorProcessingTimeMetric.tagValues("path") should contain("ActorMetricsSpec/user/tracked-actor")
 
       val nonTrackedActor = createTestActor("non-tracked-actor")
-      actorProcessingTimeMetric.valuesForTag("path") shouldNot contain("ActorMetricsSpec/user/non-tracked-actor")
+      actorProcessingTimeMetric.tagValues("path") shouldNot contain("ActorMetricsSpec/user/non-tracked-actor")
 
       val trackedButExplicitlyExcluded = createTestActor("tracked-explicitly-excluded")
-      actorProcessingTimeMetric.valuesForTag("path") shouldNot contain("ActorMetricsSpec/user/tracked-explicitly-excluded")
+      actorProcessingTimeMetric.tagValues("path") shouldNot contain("ActorMetricsSpec/user/tracked-explicitly-excluded")
     }
 
     "not pick up the root supervisor" in {
-      actorProcessingTimeMetric.valuesForTag("path") shouldNot contain("ActorMetricsSpec/")
+      actorProcessingTimeMetric.tagValues("path") shouldNot contain("ActorMetricsSpec/")
     }
 
 
@@ -51,7 +53,7 @@ class ActorMetricsSpec extends TestKit(ActorSystem("ActorMetricsSpec")) with Wor
 
       val timings = expectMsgType[TrackedTimings]
       val processingTimeDistribution = actorProcessingTimeMetric.
-        refine(actorTags("ActorMetricsSpec/user/measuring-processing-time")).distribution()
+        withTags(actorTags("ActorMetricsSpec/user/measuring-processing-time")).distribution()
 
       processingTimeDistribution.count should be(1L)
       processingTimeDistribution.buckets.size should be(1L)
@@ -66,7 +68,7 @@ class ActorMetricsSpec extends TestKit(ActorSystem("ActorMetricsSpec")) with Wor
 
       trackedActor ! Ping
       expectMsg(Pong)
-      actorErrorsMetric.refine(actorTags("ActorMetricsSpec/user/measuring-errors")).value() should be(10)
+      actorErrorsMetric.withTags(actorTags("ActorMetricsSpec/user/measuring-errors")).value() should be(10)
     }
 
     "record the mailbox-size" in new ActorMetricsFixtures {
@@ -79,7 +81,7 @@ class ActorMetricsSpec extends TestKit(ActorSystem("ActorMetricsSpec")) with Wor
       expectMsg(Pong)
 
       val mailboxSizeDistribution = actorMailboxSizeMetric
-        .refine(actorTags("ActorMetricsSpec/user/measuring-mailbox-size")).distribution()
+        .withTags(actorTags("ActorMetricsSpec/user/measuring-mailbox-size")).distribution()
 
       mailboxSizeDistribution.min should be(0L +- 1L)
       mailboxSizeDistribution.max should be(11L +- 1L)
@@ -91,7 +93,7 @@ class ActorMetricsSpec extends TestKit(ActorSystem("ActorMetricsSpec")) with Wor
       val timings = expectMsgType[TrackedTimings]
 
       val timeInMailboxDistribution = actorTimeInMailboxMetric
-        .refine(actorTags("ActorMetricsSpec/user/measuring-time-in-mailbox")).distribution()
+        .withTags(actorTags("ActorMetricsSpec/user/measuring-time-in-mailbox")).distribution()
 
       timeInMailboxDistribution.count should be(1L)
       timeInMailboxDistribution.buckets.head.frequency should be(1L)
@@ -107,7 +109,7 @@ class ActorMetricsSpec extends TestKit(ActorSystem("ActorMetricsSpec")) with Wor
       trackedActor ! PoisonPill
       deathWatcher.expectTerminated(trackedActor)
 
-      actorProcessingTimeMetric.valuesForTag("path") shouldNot contain("ActorMetricsSpec/user/stop")
+      actorProcessingTimeMetric.tagValues("path") shouldNot contain("ActorMetricsSpec/user/stop")
     }
   }
 
@@ -161,12 +163,14 @@ class ActorMetricsSpec extends TestKit(ActorSystem("ActorMetricsSpec")) with Wor
 
   override protected def afterAll(): Unit = shutdown()
 
-  def actorTags(path: String): Map[String, String] =
-    Map(
-      "path" -> path,
-      "system" -> "ActorMetricsSpec",
-      "dispatcher" -> "akka.actor.default-dispatcher",
-      "class" -> "kamon.akka.ActorMetricsTestActor"
+  def actorTags(path: String): TagSet =
+    TagSet(
+      Map(
+        "path" -> path,
+        "system" -> "ActorMetricsSpec",
+        "dispatcher" -> "akka.actor.default-dispatcher",
+        "class" -> "kamon.akka.ActorMetricsTestActor"
+      )
     )
 
   trait ActorMetricsFixtures {
@@ -183,10 +187,10 @@ class ActorMetricsSpec extends TestKit(ActorSystem("ActorMetricsSpec")) with Wor
       if(resetState) {
         val tags = actorTags(s"ActorMetricsSpec/user/$name")
 
-        actorTimeInMailboxMetric.refine(tags).distribution(resetState = true)
-        actorProcessingTimeMetric.refine(tags).distribution(resetState = true)
-        actorMailboxSizeMetric.refine(tags).distribution(resetState = true)
-        actorErrorsMetric.refine(tags).value(resetState = true)
+        actorTimeInMailboxMetric.withTags(tags).distribution(resetState = true)
+        actorProcessingTimeMetric.withTags(tags).distribution(resetState = true)
+        actorMailboxSizeMetric.withTags(tags).distribution(resetState = true)
+        actorErrorsMetric.withTags(tags).value(resetState = true)
       }
 
       actor

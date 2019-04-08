@@ -19,7 +19,7 @@ package kamon.akka25.instrumentation.kanela.interceptor
 import java.util.concurrent.Callable
 
 import kamon.Kamon
-import kamon.instrumentation.Mixin.HasContext
+import kamon.akka.context.ContextContainer
 import kanela.agent.libs.net.bytebuddy.implementation.bind.annotation.{RuntimeType, SuperCall, This}
 
 /**
@@ -28,7 +28,7 @@ import kanela.agent.libs.net.bytebuddy.implementation.bind.annotation.{RuntimeTy
 object PointMethodInterceptor {
   @RuntimeType
   def onEnter(@SuperCall callable: Callable[_], @This repointableActorRef: Object): Any = {
-    Kamon.withContext(repointableActorRef.asInstanceOf[HasContext].context) {
+    Kamon.withContext(repointableActorRef.asInstanceOf[ContextContainer].context) {
       callable.call()
     }
   }

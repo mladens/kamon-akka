@@ -28,7 +28,7 @@ import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.Future
 
-class DispatcherMetricsSpec extends TestKit(ActorSystem("DispatcherMetricsSpec")) with WordSpecLike with MetricInspection with Matchers
+class DispatcherMetricsSpec extends TestKit(ActorSystem("DispatcherMetricsSpec")) with WordSpecLike with MetricInspection.Syntax with Matchers
   with BeforeAndAfterAll with ImplicitSender with Eventually {
 
   "the Kamon dispatcher metrics" should {

@@ -22,20 +22,29 @@ import akka.testkit.{ImplicitSender, TestKit}
 import akka.util.Timeout
 import kamon.Kamon
 import kamon.akka.Metrics
-import kamon.testkit.{ContextTesting, MetricInspection}
+import kamon.context.Context
+import kamon.tag.TagSet
+import kamon.testkit.MetricInspection
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
-
+import kamon.tag.Lookups._
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
 
+object ContextTesting {
+  val TestKey = "testkey"
+  def testContext(value: String) = Context.of(TagSet.from(TestKey, value))
+}
+
 class ActorCellInstrumentationSpec extends TestKit(ActorSystem("ActorCellInstrumentationSpec")) with WordSpecLike
-    with ContextTesting with BeforeAndAfterAll with ImplicitSender with Eventually with MetricInspection with Matchers {
+    with BeforeAndAfterAll with ImplicitSender with Eventually with MetricInspection.Syntax with Matchers {
   implicit lazy val executionContext = system.dispatcher
+  import ContextTesting._
+
 
   "the message passing instrumentation" should {
     "capture and propagate the current context when using bang" in new EchoActorFixture {
-      Kamon.withContext(contextWithLocal("propagate-with-bang")) {
+      Kamon.withContext(testContext("propagate-with-bang")) {
         contextEchoActor ! "test"
       }
 
@@ -45,7 +54,7 @@ class ActorCellInstrumentationSpec extends TestKit(ActorSystem("ActorCellInstrum
     "capture and propagate the current context for messages sent when the target actor might be a repointable ref" in {
       for (_ ← 1 to 10000) {
         val ta = system.actorOf(Props[ContextStringEcho])
-        Kamon.withContext(contextWithLocal("propagate-with-tell")) {
+        Kamon.withContext(testContext("propagate-with-tell")) {
           ta.tell("test", testActor)
         }
 
@@ -56,7 +65,7 @@ class ActorCellInstrumentationSpec extends TestKit(ActorSystem("ActorCellInstrum
 
     "propagate the current context when using the ask pattern" in new EchoActorFixture {
       implicit val timeout = Timeout(1 seconds)
-      Kamon.withContext(contextWithLocal("propagate-with-ask")) {
+      Kamon.withContext(testContext("propagate-with-ask")) {
         // The pipe pattern use Futures internally, so FutureTracing test should cover the underpinnings of it.
         (contextEchoActor ? "test") pipeTo (testActor)
       }
@@ -66,7 +75,7 @@ class ActorCellInstrumentationSpec extends TestKit(ActorSystem("ActorCellInstrum
 
 
     "propagate the current context to actors behind a simple router" in new EchoSimpleRouterFixture {
-      Kamon.withContext(contextWithLocal("propagate-with-router")) {
+      Kamon.withContext(testContext("propagate-with-router")) {
         router.route("test", testActor)
       }
 
@@ -74,7 +83,7 @@ class ActorCellInstrumentationSpec extends TestKit(ActorSystem("ActorCellInstrum
     }
 
     "propagate the current context to actors behind a pool router" in new EchoPoolRouterFixture {
-      Kamon.withContext(contextWithLocal("propagate-with-pool")) {
+      Kamon.withContext(testContext("propagate-with-pool")) {
         pool ! "test"
       }
 
@@ -82,7 +91,7 @@ class ActorCellInstrumentationSpec extends TestKit(ActorSystem("ActorCellInstrum
     }
 
     "propagate the current context to actors behind a group router" in new EchoGroupRouterFixture {
-      Kamon.withContext(contextWithLocal("propagate-with-group")) {
+      Kamon.withContext(testContext("propagate-with-group")) {
         group ! "test"
       }
 
@@ -101,7 +110,7 @@ class ActorCellInstrumentationSpec extends TestKit(ActorSystem("ActorCellInstrum
         }
 
         eventually {
-          val trackedActors = Metrics.actorProcessingTimeMetric.valuesForTag("path")
+          val trackedActors = Metrics.actorProcessingTimeMetric.tagValues("path")
           for(p <- trackedActors) {
             trackedActors.find(_ == p) shouldBe empty
           }
@@ -141,10 +150,12 @@ class ActorCellInstrumentationSpec extends TestKit(ActorSystem("ActorCellInstrum
   }
 }
 
-class ContextStringEcho extends Actor with ContextTesting {
+class ContextStringEcho extends Actor {
+  import ContextTesting._
+
   def receive = {
     case _: String ⇒
-      sender ! Kamon.currentContext().get(StringKey).getOrElse("MissingContext")
+      sender ! Kamon.currentContext().getTag(plain(TestKey))
   }
 }
 

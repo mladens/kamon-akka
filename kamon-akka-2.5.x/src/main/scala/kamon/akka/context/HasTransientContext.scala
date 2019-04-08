@@ -5,6 +5,7 @@ import kamon.context.Context
 
 trait ContextContainer  {
   def setContext(context: Context)
+  def context: Context
 }
 
 object HasTransientContext {

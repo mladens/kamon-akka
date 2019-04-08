@@ -21,7 +21,7 @@ import java.util.concurrent.Callable
 
 import akka.dispatch.sysmsg.EarliestFirstSystemMessageList
 import kamon.Kamon
-import kamon.instrumentation.Mixin.HasContext
+import kamon.akka.context.ContextContainer
 import kanela.agent.libs.net.bytebuddy.implementation.bind.annotation.{Argument, RuntimeType, SuperCall}
 
 
@@ -32,7 +32,7 @@ object InvokeAllMethodInterceptor {
   @RuntimeType
   def onEnter(@SuperCall callable: Callable[_], @Argument(0) messages: EarliestFirstSystemMessageList): Any = {
     if (messages.nonEmpty) {
-      val context = messages.head.asInstanceOf[HasContext].context
+      val context = messages.head.asInstanceOf[ContextContainer].context
       Kamon.withContext(context)(callable.call())
     } else callable.call()
   }
