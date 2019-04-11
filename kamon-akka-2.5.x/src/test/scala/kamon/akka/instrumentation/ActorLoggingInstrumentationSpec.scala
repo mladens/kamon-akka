@@ -20,25 +20,19 @@ import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import akka.event.Logging.LogEvent
 import akka.testkit.{ImplicitSender, TestKit}
 import kamon.Kamon
+import kamon.akka.ContextTesting
 import kamon.akka.context.ContextContainer
-import kamon.context.Context
-import kamon.tag.TagSet
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 import kamon.tag.Lookups._
 
-object ContextTesting {
-  val TestKey = "TestKey"
-  def context(value: String) = Context.of(TagSet.from(TestKey, value))
-}
-
 class ActorLoggingInstrumentationSpec extends TestKit(ActorSystem("ActorCellInstrumentationSpec")) with WordSpecLike
     with BeforeAndAfterAll with Matchers with ImplicitSender {
-  import ContextTesting._
+  import kamon.akka.ContextTesting._
 
   "the ActorLogging instrumentation" should {
     "capture the current context and attach it to log events" in {
       val loggerActor = system.actorOf(Props[LoggerActor])
-      Kamon.withContext(context("propagate-when-logging")) {
+      Kamon.withContext(testContext("propagate-when-logging")) {
         loggerActor ! "info"
       }
 

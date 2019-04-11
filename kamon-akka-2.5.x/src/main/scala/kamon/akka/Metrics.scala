@@ -172,7 +172,7 @@ object Metrics {
   val systemActiveActors = Kamon.rangeSampler("akka.system.active-actors")
 
   def forSystem(name: String): ActorSystemMetrics = {
-    val systemTags = TagSet.from("system", name)
+    val systemTags = TagSet.of("system", name)
 
     ActorSystemMetrics(
       systemDeadLetters.withTags(systemTags),

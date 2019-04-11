@@ -164,7 +164,7 @@ class ActorMetricsSpec extends TestKit(ActorSystem("ActorMetricsSpec")) with Wor
   override protected def afterAll(): Unit = shutdown()
 
   def actorTags(path: String): TagSet =
-    TagSet(
+    TagSet.from(
       Map(
         "path" -> path,
         "system" -> "ActorMetricsSpec",

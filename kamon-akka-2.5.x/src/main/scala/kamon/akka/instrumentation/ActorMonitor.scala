@@ -84,7 +84,7 @@ object ActorMonitors {
     override def processMessageStart(envelopeContext: TimestampedContext, envelope: Envelope): AnyRef = {
 
       val messageSpan = buildSpan(cellInfo, envelopeContext, envelope)
-      val contextWithMessageSpan = envelopeContext.context.withKey(Span.ContextKey, messageSpan)
+      val contextWithMessageSpan = envelopeContext.context.withKey(Span.Key, messageSpan)
       monitor.processMessageStart(envelopeContext.copy(context = contextWithMessageSpan), envelope)
       messageSpan
     }
@@ -100,14 +100,13 @@ object ActorMonitors {
 
     private def buildSpan(cellInfo: CellInfo, envelopeContext: TimestampedContext, envelope: Envelope): Span = {
       val messageClass = simpleClassName(envelope.message.getClass)
-      val parentSpan = envelopeContext.context.get(Span.ContextKey)
+      val parentSpan = envelopeContext.context.get(Span.Key)
       val operationName = actorSimpleClassName + ": " + messageClass
 
-      Kamon.buildSpan(operationName)
-        .withFrom(Kamon.clock().toInstant(envelopeContext.nanoTime))
+      Kamon.spanBuilder(operationName)
         .asChildOf(parentSpan)
         .disableMetrics()
-        .start()
+        .start(Kamon.clock().toInstant(envelopeContext.nanoTime))
         .mark("akka.actor.dequeued")
         .tag("component", "akka.actor")
         .tag("akka.system", cellInfo.systemName)

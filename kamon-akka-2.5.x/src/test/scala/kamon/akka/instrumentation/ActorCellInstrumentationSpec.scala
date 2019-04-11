@@ -31,15 +31,11 @@ import kamon.tag.Lookups._
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
 
-object ContextTesting {
-  val TestKey = "testkey"
-  def testContext(value: String) = Context.of(TagSet.from(TestKey, value))
-}
 
 class ActorCellInstrumentationSpec extends TestKit(ActorSystem("ActorCellInstrumentationSpec")) with WordSpecLike
     with BeforeAndAfterAll with ImplicitSender with Eventually with MetricInspection.Syntax with Matchers {
   implicit lazy val executionContext = system.dispatcher
-  import ContextTesting._
+  import kamon.akka.ContextTesting._
 
 
   "the message passing instrumentation" should {
@@ -151,7 +147,7 @@ class ActorCellInstrumentationSpec extends TestKit(ActorSystem("ActorCellInstrum
 }
 
 class ContextStringEcho extends Actor {
-  import ContextTesting._
+  import kamon.akka.ContextTesting._
 
   def receive = {
     case _: String ⇒
