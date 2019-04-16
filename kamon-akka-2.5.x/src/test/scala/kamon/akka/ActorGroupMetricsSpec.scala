@@ -24,7 +24,7 @@ import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import kamon.testkit.{InstrumentInspection, MetricInspection}
 import Metrics._
 import kamon.tag.TagSet
-import kamon.util.GlobPathFilter
+import kamon.util.Filter.Glob
 import org.scalatest.concurrent.{Eventually, PatienceConfiguration}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
@@ -73,7 +73,7 @@ class ActorGroupMetricsSpec extends TestKit(ActorSystem("ActorGroupMetricsSpec")
 
     "allow defining groups by configuration" in {
       Akka.actorGroups("system/user/group-provided-by-code-actor") shouldBe empty
-      Akka.addActorGroup("group-by-code", new GlobPathFilter("*/user/group-provided-by-code-actor")) shouldBe true
+      Akka.addActorGroup("group-by-code", Glob("*/user/group-provided-by-code-actor")) shouldBe true
       Akka.actorGroups("system/user/group-provided-by-code-actor") should contain only("group-by-code")
       Akka.removeActorGroup("group-by-code")
       Akka.actorGroups("system/user/group-provided-by-code-actor") shouldBe empty

@@ -166,7 +166,8 @@ object DispatcherInstrumentationAdvisors {
 
 
   def registerDispatcher(dispatcherName: String, executorService: ExecutorService, system: ActorSystem): Unit = {
-    if(Kamon.filter(Akka.DispatcherFilterName, dispatcherName)) {
+    val instrument = Akka.filters.get(Akka.DispatcherFilterName).fold(false)(_.accept(dispatcherName))
+    if(instrument) {
       val additionalTags = TagSet.of("actor-system", system.name)
       val dispatcherRegistration = Executors.register(dispatcherName, additionalTags, executorService)
 

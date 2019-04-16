@@ -50,8 +50,8 @@ object CellInfo {
 
     val fullPath = if (isRoutee) cellName(system, parent) else cellName(system, ref)
     val filterName = if (isRouter || isRoutee) Akka.RouterFilterName else Akka.ActorFilterName
-    val isTracked = !isRootSupervisor && Kamon.filter(filterName, fullPath)
-    val isTraced = Kamon.filter(Akka.ActorTracingFilterName, fullPath)
+    val isTracked = !isRootSupervisor && Akka.filters.get(filterName).fold(false)(_.accept(fullPath))
+    val isTraced = Akka.filters.get(Akka.ActorTracingFilterName).fold(false)(_.accept(fullPath))
     val trackingGroups = if(isRootSupervisor) List() else Akka.actorGroups(fullPath)
 
     val dispatcherName = if(isRouter) {

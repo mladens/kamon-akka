@@ -68,7 +68,7 @@ class DispatcherInstrumentation {
   }
 
   private def registerDispatcher(dispatcherName: String, executorService: ExecutorService, system: ActorSystem): Unit = {
-    if(Kamon.filter(Akka.DispatcherFilterName, dispatcherName)) {
+    if(Kamon.filter(Akka.DispatcherFilterName).accept(dispatcherName)) {
       val additionalTags = TagSet.of("actor-system", system.name)
       val dispatcherRegistration = Executors.register(dispatcherName, additionalTags, executorService)
       registeredDispatchers.put(dispatcherName, dispatcherRegistration).foreach(_.close())

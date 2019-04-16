@@ -15,10 +15,11 @@
 
 
 resolvers += Resolver.bintrayRepo("kamon-io", "snapshots")
-val kamonCore       = "io.kamon" %% "kamon-core"         % "2.0.0-7dd537de1b5654d5f0d019f076edccb757775f4d"
-val kamonTestkit    = "io.kamon" %% "kamon-testkit"      % "2.0.0-7dd537de1b5654d5f0d019f076edccb757775f4d"
+val kamonCore       = "io.kamon" %% "kamon-core"         % "2.0.0-d2d5cb18261e2c79b86340bf39524394700415e8"
+val kamonTestkit    = "io.kamon" %% "kamon-testkit"      % "2.0.0-d2d5cb18261e2c79b86340bf39524394700415e8"
+
 val kamonScala      = "io.kamon" %% "kamon-scala-future" % "1.1.0-M1"
-val kamonExecutors  = "io.kamon" %% "kamon-executors"    % "2.0.0-e569461f3358199a7568024f5fb79f5968fc76ec"
+val kamonExecutors  = "io.kamon" %% "kamon-executors"    % "2.0.0-79b985e963b339fe0fc66a6c5b9a9380d67d0b5e"
 
 val kanelaScalaExtension  = "io.kamon"  %%  "kanela-scala-extension"  % "0.0.14"
 val kanelaAgent           = "io.kamon"  %   "kanela-agent"            % "0.0.15"

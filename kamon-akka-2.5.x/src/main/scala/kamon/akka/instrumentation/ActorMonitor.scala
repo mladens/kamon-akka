@@ -134,7 +134,6 @@ object ActorMonitors {
     override val processMessageStartTimestamp: Long = 0L
 
     def processMessageStart(envelopeContext: TimestampedContext, envelope: Envelope): AnyRef = {
-
       processedMessagesCounter.increment()
       val scope = Kamon.storeContext(envelopeContext.context)
       scope

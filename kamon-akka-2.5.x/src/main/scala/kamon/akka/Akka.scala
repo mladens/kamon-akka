@@ -20,7 +20,7 @@ import com.typesafe.config.Config
 import kamon.Configuration.OnReconfigureHook
 import kamon.Kamon
 import kamon.akka.AskPatternTimeoutWarningSettings.Off
-import kamon.util.Matcher
+import kamon.util.Filter
 
 import scala.collection.JavaConverters._
 
@@ -31,9 +31,10 @@ object Akka {
   val ActorTracingFilterName = "akka.traced-actor"
 
   @volatile var askPatternTimeoutWarning: AskPatternTimeoutWarningSetting = Off
-  @volatile private var _actorGroups = Map.empty[String, Matcher]
-  @volatile private var _configProvidedActorGroups = Map.empty[String, Matcher]
-  @volatile private var _codeProvidedActorGroups = Map.empty[String, Matcher]
+  @volatile private var _actorGroups = Map.empty[String, Filter]
+  @volatile private var _actorFilters = Map.empty[String, Filter]
+  @volatile private var _configProvidedActorGroups = Map.empty[String, Filter]
+  @volatile private var _codeProvidedActorGroups = Map.empty[String, Filter]
 
   loadConfiguration(Kamon.config())
 
@@ -51,15 +52,33 @@ object Akka {
     }).toMap
 
     _actorGroups = _codeProvidedActorGroups ++ _configProvidedActorGroups
+
+    _actorFilters = loadFilters(config)
   }
+
+  private def loadFilters(config: Config): Map[String, Filter] = synchronized {
+    val filterConfig = config.getConfig("kamon.util.filters")
+
+    val filterNames = filterConfig
+      .root().entrySet().asScala
+      .filter(_.getKey.startsWith("akka"))
+      .map(_.getKey)
+
+    filterNames.map { name =>
+      val k = "\"" + name + "\"" //TODO bleh
+      name -> Filter.from(filterConfig.getConfig(k))
+    }.toMap
+  }
+
+  def filters: Map[String, Filter] = _actorFilters
 
   def actorGroups(path: String): Seq[String] = {
     _actorGroups.filter { case (_, v) => v.accept(path) }.keys.toSeq
   }
 
-  def addActorGroup(groupName: String, matcher: Matcher): Boolean = synchronized {
+  def addActorGroup(groupName: String, filter: Filter): Boolean = synchronized {
     if(_codeProvidedActorGroups.get(groupName).isEmpty) {
-      _codeProvidedActorGroups = _codeProvidedActorGroups + (groupName -> matcher)
+      _codeProvidedActorGroups = _codeProvidedActorGroups + (groupName -> filter)
       _actorGroups = _codeProvidedActorGroups ++ _configProvidedActorGroups
       true
     } else false
