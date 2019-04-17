@@ -20,16 +20,24 @@ import akka.routing._
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import org.scalactic.TimesOnInt._
 import Metrics._
+import com.typesafe.config.ConfigFactory
+import kamon.Kamon
 import kamon.akka.RouterMetricsTestActor._
 import kamon.tag.TagSet
 import kamon.testkit.{InstrumentInspection, MetricInspection}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 import kamon.tag.Lookups._
+
 import scala.concurrent.duration._
 
 class RouterMetricsSpec extends TestKit(ActorSystem("RouterMetricsSpec")) with WordSpecLike with MetricInspection.Syntax with InstrumentInspection.Syntax with Matchers
   with BeforeAndAfterAll with ImplicitSender with Eventually {
+
+  Kamon.reconfigure(
+    ConfigFactory.parseString("kamon.metric.tick-interval=100 millis")
+      .withFallback(Kamon.config())
+  )
 
   "the Kamon router metrics" should {
     "respect the configured include and exclude filters" in new RouterMetricsFixtures {
@@ -203,10 +211,10 @@ class RouterMetricsSpec extends TestKit(ActorSystem("RouterMetricsSpec")) with W
         testProbe.expectMsg(Pong)
       }
 
-
       val routerMetrics = routerMembers.instruments(
         TagSet.from(Map("path" -> "RouterMetricsSpec/user/picking-the-right-dispatcher-in-pool-router"))
       )
+
       routerMetrics
           .map(_._1.get(plain("dispatcher")))  should contain only("custom-dispatcher")
     }
@@ -221,7 +229,10 @@ class RouterMetricsSpec extends TestKit(ActorSystem("RouterMetricsSpec")) with W
       1 times { router.tell(Die, timingsListener.ref)}
       500 times { router.tell(Discard, timingsListener.ref)}
 
-      pendingMessagesDistribution.max should be >= (500L)
+      eventually {
+        pendingMessagesDistribution.max should be >= (500L)
+      }
+
       10 times { timingsListener.expectMsgType[RouterTrackedTimings] }
 
       eventually {
@@ -242,7 +253,10 @@ class RouterMetricsSpec extends TestKit(ActorSystem("RouterMetricsSpec")) with W
       1 times { router.tell(Die, timingsListener.ref)}
       500 times { router.tell(Discard, timingsListener.ref)}
 
-      pendingMessagesDistribution.max should be >= (100L)
+      eventually {
+        pendingMessagesDistribution.max should be >= (100L)
+      }
+
       10 times { timingsListener.expectMsgType[RouterTrackedTimings] }
 
       eventually {
@@ -260,7 +274,10 @@ class RouterMetricsSpec extends TestKit(ActorSystem("RouterMetricsSpec")) with W
       trackedRouter ! PoisonPill
       deathWatcher.expectTerminated(trackedRouter)
 
-      routerProcessingTime.tagValues("path") shouldNot contain("RouterMetricsSpec/user/stop-in-pool-router")
+
+      eventually {
+        routerProcessingTime.tagValues("path") shouldNot contain("RouterMetricsSpec/user/stop-in-pool-router")
+      }
     }
   }
 

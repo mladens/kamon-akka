@@ -19,6 +19,7 @@ package kamon.akka
 import com.typesafe.config.Config
 import kamon.Configuration.OnReconfigureHook
 import kamon.Kamon
+import kamon.akka.Akka.ActorTracingFilterName
 import kamon.akka.AskPatternTimeoutWarningSettings.Off
 import kamon.util.Filter
 
@@ -45,29 +46,28 @@ object Akka {
 
   private def loadConfiguration(config: Config): Unit = synchronized {
     val akkaConfig = config.getConfig("kamon.akka")
+    val groupsConfig = akkaConfig.getConfig("filters.groups")
+
     askPatternTimeoutWarning = AskPatternTimeoutWarningSettings.fromConfig(akkaConfig)
 
-    _configProvidedActorGroups = akkaConfig.getStringList("actor-groups").asScala.map(groupName => {
-      (groupName -> Kamon.filter(groupName))
+    _configProvidedActorGroups = groupsConfig.root.entrySet().asScala.map(entry => {
+      val groupName = entry.getKey
+      groupName -> Filter.from(groupsConfig.getConfig(groupName))
     }).toMap
 
     _actorGroups = _codeProvidedActorGroups ++ _configProvidedActorGroups
 
-    _actorFilters = loadFilters(config)
+    _actorFilters = loadFilters(akkaConfig)
   }
 
   private def loadFilters(config: Config): Map[String, Filter] = synchronized {
-    val filterConfig = config.getConfig("kamon.util.filters")
-
-    val filterNames = filterConfig
-      .root().entrySet().asScala
-      .filter(_.getKey.startsWith("akka"))
-      .map(_.getKey)
-
-    filterNames.map { name =>
-      val k = "\"" + name + "\"" //TODO bleh
-      name -> Filter.from(filterConfig.getConfig(k))
-    }.toMap
+    val filterConfig = config.getConfig("filters")
+    Map(
+      ActorFilterName         -> Filter.from(filterConfig.getConfig("actors.track")),
+      ActorTracingFilterName  -> Filter.from(filterConfig.getConfig("actors.trace")),
+      RouterFilterName        -> Filter.from(filterConfig.getConfig("routers")),
+      DispatcherFilterName    -> Filter.from(filterConfig.getConfig("dispatchers")),
+    )
   }
 
   def filters: Map[String, Filter] = _actorFilters

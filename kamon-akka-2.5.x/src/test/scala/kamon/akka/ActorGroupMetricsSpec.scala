@@ -40,7 +40,9 @@ class ActorGroupMetricsSpec extends TestKit(ActorSystem("ActorGroupMetricsSpec")
       val trackedActor3 = watch(createTestActor("group-of-actors-3"))
       val nonTrackedActor = createTestActor("someone-else")
 
-      groupMembers.withTags(groupTags("group-of-actors")).distribution().max shouldBe(3)
+      eventually {
+        groupMembers.withTags(groupTags("group-of-actors")).distribution().max shouldBe(3)
+      }
 
       system.stop(trackedActor1)
       expectTerminated(trackedActor1)

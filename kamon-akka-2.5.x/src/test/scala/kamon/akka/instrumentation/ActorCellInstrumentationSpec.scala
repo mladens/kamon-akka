@@ -20,6 +20,7 @@ import akka.pattern.{ask, pipe}
 import akka.routing._
 import akka.testkit.{ImplicitSender, TestKit}
 import akka.util.Timeout
+import com.typesafe.config.ConfigFactory
 import kamon.Kamon
 import kamon.akka.Metrics
 import kamon.context.Context
@@ -28,6 +29,7 @@ import kamon.testkit.MetricInspection
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 import kamon.tag.Lookups._
+
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
 
@@ -36,6 +38,11 @@ class ActorCellInstrumentationSpec extends TestKit(ActorSystem("ActorCellInstrum
     with BeforeAndAfterAll with ImplicitSender with Eventually with MetricInspection.Syntax with Matchers {
   implicit lazy val executionContext = system.dispatcher
   import kamon.akka.ContextTesting._
+
+  Kamon.reconfigure(
+    ConfigFactory.parseString("kamon.metric.tick-interval=10 millis")
+      .withFallback(Kamon.config())
+  )
 
 
   "the message passing instrumentation" should {
@@ -105,7 +112,7 @@ class ActorCellInstrumentationSpec extends TestKit(ActorSystem("ActorCellInstrum
           trackedActors.append(actorPathTag(a))
         }
 
-        eventually {
+        eventually(timeout(1 second)) {
           val trackedActors = Metrics.actorProcessingTimeMetric.tagValues("path")
           for(p <- trackedActors) {
             trackedActors.find(_ == p) shouldBe empty

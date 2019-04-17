@@ -89,6 +89,7 @@ class ActorMetricsSpec extends TestKit(ActorSystem("ActorMetricsSpec")) with Wor
   }
 
 
+
   "the Kamon actor metrics" should {
 
     "respect the configured include and exclude filters" in new ActorMetricsFixtures {
@@ -175,6 +176,7 @@ class ActorMetricsSpec extends TestKit(ActorSystem("ActorMetricsSpec")) with Wor
      }
    }
   }
+
 
   override protected def afterAll(): Unit = shutdown()
 
