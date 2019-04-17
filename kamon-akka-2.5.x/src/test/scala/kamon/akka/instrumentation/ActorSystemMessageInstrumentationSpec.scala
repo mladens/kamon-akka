@@ -34,7 +34,7 @@ class ActorSystemMessageInstrumentationSpec extends TestKit(ActorSystem("ActorSy
   implicit lazy val executionContext = system.dispatcher
 
   "the system message passing instrumentation" should {
- /*   "capture and propagate the current context while processing the Create message in top level actors" in {
+    "capture and propagate the current context while processing the Create message in top level actors" in {
       Kamon.withContext(testContext("creating-top-level-actor")) {
         system.actorOf(Props(new Actor {
           testActor ! propagatedContextKey()
@@ -59,7 +59,7 @@ class ActorSystemMessageInstrumentationSpec extends TestKit(ActorSystem("ActorSy
       }
 
       expectMsg("creating-non-top-level-actor")
-    }*/
+    }
 
     "keep the current context in the supervision cycle" when {
       "the actor is resumed" in {
@@ -74,8 +74,6 @@ class ActorSystemMessageInstrumentationSpec extends TestKit(ActorSystem("ActorSy
         supervisor ! "context"
         expectMsg("MissingContext")
       }
-
-      /*
 
       "the actor is restarted" in {
         val supervisor = supervisorWithDirective(Restart, sendPreRestart = true, sendPostRestart = true)
@@ -114,12 +112,12 @@ class ActorSystemMessageInstrumentationSpec extends TestKit(ActorSystem("ActorSy
         expectMsg("fail-and-escalate") // From the postStop hook in the child
         expectMsg("fail-and-escalate") // From the postStop hook in the parent
         expectNoMessage(1 second)
-      }*/
+      }
     }
   }
 
   private def propagatedContextKey(): String =
-    Kamon.currentContext().getTag(plain(TestKey))
+    Kamon.currentContext().getTag(option(TestKey)).getOrElse("MissingContext")
 
   def supervisorWithDirective(directive: SupervisorStrategy.Directive, sendPreRestart: Boolean = false, sendPostRestart: Boolean = false,
     sendPostStop: Boolean = false, sendPreStart: Boolean = false): ActorRef = {
